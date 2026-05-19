@@ -3,6 +3,10 @@
 Käesolev andmeinseneeria projekt ehitab otsast lõpuni andmetöövoo. Projekt loeb Äriregistri avaandmete API-st igapäevased muutuste väljavõtteid EMTAK tegevusalade ja maakondade kaupa ning täiendavalt loeb Statistikaameti API-st rahvastiku andmeid. Salvestab need PostgreSQL-i, leiab valdkonnad, kus registreeritakse kõige rohkem uusi ettevõtteid ning kus on juhatuse muudatuste sagedus kõige kõrgem, presenteerib rahvastiku jaotust, kontrollib andmekvaliteeti ja näitab tulemust Superseti näidikulaual. Äriregistri avaandmed uuenevad igapäevaselt. Statistikaameti andmed uuenevad kord kuus.
 Scheduler ehk ajastaja konteiner värskendab andmeid vaikimisi iga xx alguses.
 
+## Olulised lingid
+Projekti kirjeldus: [Moodle](https://moodle.ut.ee/mod/data/view.php?d=1231&advanced=0&paging&filter=1&page=0&rid=19075)
+Teams Koosolekulink: [T 19.05.2026 kell 18:00](https://teams.microsoft.com/meet/380111006617570?p=8IYORzSl4Yk78naD59)
+
 ## Äriküsimus
 
 Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?
