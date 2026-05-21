@@ -1,5 +1,7 @@
 # Arhitektuur
 
+Esimesel nädalal vaja esitada
+
 See fail on näidis projektitöö esimese nädala väljundiks. Enda projektis asenda siinne sisu oma teema ja otsustega.
 
 ## Äriküsimus
