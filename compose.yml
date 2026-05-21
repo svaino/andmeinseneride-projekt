@@ -13,7 +13,7 @@ services:
   # Kõigil projektidel on vaja andmebaasi. pgDuckDB toetab nii PostgreSQL-i kui DuckDB päringuid.
   db:
     image: pgduckdb/pgduckdb:18-v1.1.1
-    container_name: [PROJEKTI-NIMI]-db
+    container_name: andmeinseneeria-db
     env_file:
       - .env
     environment:
