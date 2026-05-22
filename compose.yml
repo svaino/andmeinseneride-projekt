@@ -9,8 +9,6 @@
 
 services:
 
-  # --- Andmebaas ---
-  # Kõigil projektidel on vaja andmebaasi. pgDuckDB toetab nii PostgreSQL-i kui DuckDB päringuid.
   db:
     image: pgduckdb/pgduckdb:18-v1.1.1
     container_name: andmeinseneeria-db
@@ -23,7 +21,7 @@ services:
     ports:
       - "${DB_PORT_HOST:-55432}:5432"
     volumes:
-      - ./init:/docker-entrypoint-initdb.d   # SQL-skriptid, mis käivituvad esimesel korral
+      - ./init:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-praktikum}"]
@@ -36,26 +34,27 @@ services:
   # Airflow-põhise stacki puhul asenda selle sektsioon airflow/* teenustega
   # (vaata naidisprojekt-ilmaandmed-dbt-ja-airflow/compose.yml).
   #
-  # pipeline:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.app
-  #   container_name: [PROJEKTI-NIMI]-pipeline
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     DB_HOST: db
-  #     DB_PORT: "5432"
-  #     DB_USER: ${POSTGRES_USER}
-  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
-  #     DB_NAME: ${POSTGRES_DB}
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./scripts:/app/scripts
-  #   working_dir: /app
-  #   tty: true
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: andmeinseneeria-pipeline
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+    working_dir: /app
+    tty: true
 
   # --- Näidikulaud ---
   # Streamliti põhine näide. Superset-põhise stacki puhul vaata
