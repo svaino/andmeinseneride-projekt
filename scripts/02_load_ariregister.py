@@ -57,20 +57,27 @@ def prepare_database():
 
 
 def find_latest_xml_link():
-    """Tuvastab Äriregistri avaandmete lehelt värskeima Üldandmete XML ZIP-faili lingi."""
-    response = requests.get(AVAANDMED_URL)
+    """Finds the exact Äriregister yldandmed XML ZIP file."""
+    target_filename = "ettevotja_rekvisiidid__yldandmed.xml.zip"
+
+    response = requests.get(AVAANDMED_URL, timeout=60)
+
     if response.status_code != 200:
         raise Exception(f"Viga avaandmete lehele sisenemisel: {response.status_code}")
-        
-    soup = BeautifulSoup(response.text, 'html.parser')
-    for link in soup.find_all('a', href=True):
-        href = link['href']
-        if '.zip' in href and 'xml' in href.lower() and ('uldandmed' in href.lower() or 'yldandmed' in href.lower() or 'rekvisiidid' in href.lower()):
-            if href.startswith('/'):
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    for link in soup.find_all("a", href=True):
+        href = link["href"].strip()
+        href_lower = href.lower()
+
+        if target_filename in href_lower:
+            if href.startswith("/"):
                 return f"https://avaandmed.ariregister.rik.ee{href}"
+
             return href
-            
-    return "https://avaandmed.ariregister.rik.ee/sites/default/files/avaandmed/ettevotja_rekvisiidid__yldandmed.xml.zip"
+
+    raise Exception(f"Ei leidnud faili: {target_filename}")
 
 
 def convert_date_format(date_str):
@@ -150,119 +157,129 @@ def download_and_process_xml():
         with archive.open(xml_filename) as xml_file:
             context = ET.iterparse(xml_file, events=('start', 'end'))
             
-            # Ettevõtte andmete ajutised muutujad
-            reg_kood = None
-            nimi = None
-            raw_date = None
-            oiguslik_vorm = None
-            maakond = "Määramata"
-            staatus = "Registris"
-            
-            emtak_kood = None
-            emtak_nimetus = None
-            emtak_versioon = None
-            
-            # Tegevusala rea muutujad
-            temp_kood = None
-            temp_nimetus = None
-            temp_versioon = None
-            temp_on_pohi = False
+            path = []
+
+            company = None
+            activity = None
+            in_teatatud_tegevusalad = False
+            in_aadressid = False
 
             for event, elem in context:
-                tag_name = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
-                
-                # --- SÜNDMUS: START ---
-                if event == 'start':
-                    if tag_name in ['ettevotja', 'ettevote', 'keha']:
-                        reg_kood = None
-                        nimi = None
-                        raw_date = None
-                        oiguslik_vorm = None
-                        maakond = "Määramata"
-                        staatus = "Registris"
-                        emtak_kood = None
-                        emtak_nimetus = None
-                        emtak_versioon = None
-                        
-                    elif tag_name == 'item':
-                        temp_kood = None
-                        temp_nimetus = None
-                        temp_versioon = None
-                        temp_on_pohi = False
+                tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
 
-                # --- SÜNDMUS: END ---
-                elif event == 'end':
-                    val_text = elem.text.strip() if elem.text else None
-                    
-                    if val_text:
-                        if tag_name in ['ariregistri_kood', 'reg_kood']:
-                            reg_kood = val_text
-                        elif tag_name in ['nimi', 'ari_nimi', 'evnimi']:
-                            nimi = val_text
-                        elif tag_name == 'esmaregistreerimise_kpv':
-                            raw_date = val_text
-                        elif tag_name in ['oiguslik_vorm_tekstina', 'oiguslik_vorm']:
-                            oiguslik_vorm = val_text
-                        elif tag_name in ['staatus_tekstina', 'staatus']:
-                            staatus = val_text
-                        elif tag_name in ['aadress_ads__ads_normaliseeritud_taisaadress', 'aadress']:
-                            maakond = val_text.split(',')[0].strip()
-                        
-                        # EMTAK väärtuste kogumine
-                        elif tag_name == 'emtak_kood':
-                            temp_kood = val_text
-                        elif tag_name == 'emtak_tekstina':
-                            temp_nimetus = val_text
-                        elif tag_name == 'emtak_versioon':
-                            temp_versioon = val_text
-                        elif tag_name == 'on_pohitegevusala':
-                            temp_on_pohi = val_text.lower() in ['true', 'jah', '1']
+                if event == "start":
+                    path.append(tag)
 
-                    # Kui tegevusala objekt sulgus
-                    if tag_name == 'item' and temp_kood:
-                        if temp_on_pohi or not emtak_kood:
-                            emtak_kood = temp_kood
-                            emtak_nimetus = temp_nimetus
-                            emtak_versioon = temp_versioon
+                    if tag == "ettevotja":
+                        company = {
+                            "reg_kood": None,
+                            "nimi": None,
+                            "raw_date": None,
+                            "oiguslik_vorm": None,
+                            "maakond": None,
+                            "staatus": None,
+                            "emtak_kood": None,
+                            "emtak_nimetus": None,
+                            "emtak_versioon": None,
+                        }
 
-                    # Kui kogu ettevõtte blokk sai läbi, teeme andmebaasi-kõlblikuks
-                    if tag_name in ['ettevotja', 'ettevote', 'keha'] and reg_kood and nimi:
-                        asutamise_kp = convert_date_format(raw_date)
-                        
-                        # Turvaline õigusliku vormi tuletamine
-                        if not oiguslik_vorm:
-                            nimi_upper = nimi.upper()
-                            tunnused = {'OÜ': 'Osaühing', 'AS': 'Aktsiaselts', 'FIE': 'Füüsilisest isikust ettevõtja', 'MTÜ': 'Mittetulundusühing'}
-                            for tunnus, taisnimis in tunnused.items():
-                                if tunnus in nimi_upper or taisnimis.upper() in nimi_upper:
-                                    oiguslik_vorm = tunnus
-                                    break
-                            oiguslik_vorm = oiguslik_vorm or "Määramata"
+                    elif tag == "teatatud_tegevusalad":
+                        in_teatatud_tegevusalad = True
 
-                        # Turvaline stringide lõikamine (kui väärtus on olemas, siis lõikame, muidu None)
-                        clean_nimi = nimi[:255].strip() if nimi else "Tundmatu"
-                        clean_vorm = oiguslik_vorm[:100].strip() if oiguslik_vorm else "Määramata"
-                        clean_maakond = maakond[:100].strip() if maakond else "Määramata"
-                        clean_staatus = staatus[:100].strip() if staatus else "Registris"
-                        clean_emtak_kood = emtak_kood[:50].strip() if emtak_kood else None
-                        clean_emtak_nim = emtak_nimetus[:255].strip() if emtak_nimetus else None
-                        clean_emtak_ver = emtak_versioon[:50].strip() if emtak_versioon else None
+                    elif tag == "aadressid":
+                        in_aadressid = True
 
-                        batch.append((
-                            reg_kood.strip(), clean_nimi, clean_vorm, asutamise_kp,
-                            clean_maakond, clean_staatus, clean_emtak_kood, clean_emtak_nim, clean_emtak_ver
-                        ))
-                        
-                        if len(batch) >= BATCH_SIZE:
-                            save_batch(cur, batch)
-                            conn.commit()
-                            total_inserted += len(batch)
-                            if total_inserted % 25000 == 0:
+                    elif tag == "item" and in_teatatud_tegevusalad:
+                        activity = {
+                            "kood": None,
+                            "nimetus": None,
+                            "versioon": None,
+                            "on_pohi": False,
+                        }
+
+                elif event == "end":
+                    text = elem.text.strip() if elem.text and elem.text.strip() else None
+
+                    if company is not None and text:
+                        # Top-level company fields
+                        if path[-2:] == ["ettevotja", "ariregistri_kood"]:
+                            company["reg_kood"] = text
+
+                        elif path[-2:] == ["ettevotja", "nimi"]:
+                            company["nimi"] = text
+
+                        elif tag == "esmaregistreerimise_kpv":
+                            company["raw_date"] = text
+
+                        elif tag == "oiguslik_vorm_tekstina":
+                            company["oiguslik_vorm"] = text
+
+                        elif tag == "staatus_tekstina" and "yldandmed" in path:
+                            # Prefer yldandmed/staatus_tekstina, not random nested statuses
+                            company["staatus"] = text
+
+                        # Address / county
+                        elif in_aadressid and tag == "ehak_nimetus":
+                            parts = [p.strip() for p in text.split(",") if p.strip()]
+                            if parts:
+                                company["maakond"] = parts[-1]
+
+                        # Current declared activities
+                        elif in_teatatud_tegevusalad and activity is not None:
+                            if tag == "emtak_kood":
+                                activity["kood"] = text
+                            elif tag == "emtak_tekstina":
+                                activity["nimetus"] = text
+                            elif tag == "emtak_versioon_tekstina":
+                                activity["versioon"] = text
+                            elif tag == "emtak_versioon":
+                                # fallback if text version is missing
+                                activity["versioon"] = activity["versioon"] or text
+                            elif tag == "on_pohitegevusala":
+                                activity["on_pohi"] = text.lower() in ("true", "jah", "1")
+
+                    # Close activity item
+                    if tag == "item" and in_teatatud_tegevusalad and activity:
+                        if activity["on_pohi"] or not company["emtak_kood"]:
+                            company["emtak_kood"] = activity["kood"]
+                            company["emtak_nimetus"] = activity["nimetus"]
+                            company["emtak_versioon"] = activity["versioon"]
+                        activity = None
+
+                    elif tag == "teatatud_tegevusalad":
+                        in_teatatud_tegevusalad = False
+
+                    elif tag == "aadressid":
+                        in_aadressid = False
+
+                    # Close company
+                    elif tag == "ettevotja" and company:
+                        if company["reg_kood"] and company["nimi"]:
+                            asutamise_kp = convert_date_format(company["raw_date"])
+
+                            batch.append((
+                                company["reg_kood"].strip(),
+                                company["nimi"][:255].strip(),
+                                (company["oiguslik_vorm"] or "Määramata")[:100].strip(),
+                                asutamise_kp,
+                                (company["maakond"] or "Määramata")[:100].strip(),
+                                (company["staatus"] or "Registris")[:100].strip(),
+                                company["emtak_kood"][:50].strip() if company["emtak_kood"] else None,
+                                company["emtak_nimetus"][:255].strip() if company["emtak_nimetus"] else None,
+                                company["emtak_versioon"][:50].strip() if company["emtak_versioon"] else None,
+                            ))
+
+                            if len(batch) >= BATCH_SIZE:
+                                save_batch(cur, batch)
+                                conn.commit()
+                                total_inserted += len(batch)
                                 print(f"   .. laaditud {total_inserted} ettevõtet ..")
-                            batch = []
-                    
-                    # Vabastame elemendi mälust
-                    elem.clear()
+                                batch = []
+
+                        company = None
+
+                    path.pop()
+                    elem.clear()    
             
             if batch:
                 save_batch(cur, batch)
