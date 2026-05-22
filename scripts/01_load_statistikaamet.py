@@ -1,44 +1,152 @@
 import os
 import requests
 import json
+import itertools
+import psycopg2
+from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 
-# 1. Laeme keskkonnamuutujad
+# 1. Keskkonnamuutujate laadimine
 load_dotenv()
 
 API_URL = os.getenv("STAT_API_URL")
-TABELI_KOOD = "RV021" 
+TABELI_KOOD = "RV022U" 
 full_url = f"{API_URL}/{TABELI_KOOD}"
+BATCH_SIZE = 5000
 
-# 2. Korreetsed tekstilised koodid ("1")
+# Päringu payload (kõik 5 dimensiooni)
 payload = {
     "query": [
-        {
-            "code": "Sugu",
-            "selection": {
-                "filter": "item",
-                "values": ["1"]
-            }
-        },
-        {
-            "code": "Vanuserühm",
-            "selection": {
-                "filter": "item",
-                "values": ["1"]
-            }
-        },
-        {
-            "code": "Aasta",
-            "selection": {
-                "filter": "item",
-                "values": ["2024"]  # Proovime tärni asemel konkreetset aastat
-            }
-        }
+        {"code": "Aasta", "selection": {"filter": "all", "values": ["*"]}},
+        {"code": "Vanuserühm", "selection": {"filter": "all", "values": ["*"]}},
+        {"code": "Maakond", "selection": {"filter": "all", "values": ["*"]}},
+        {"code": "Sugu", "selection": {"filter": "all", "values": ["*"]}},
+        {"code": "Rahvus", "selection": {"filter": "all", "values": ["*"]}}
     ],
-    "response": {
-        "format": "json-stat2"
-    }
+    "response": {"format": "json-stat2"}
 }
+
+
+def get_db_connection():
+    """Loob ühenduse PostgreSQL andmebaasiga."""
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST", "localhost"),
+        port=os.getenv("DB_PORT", "5432"),
+        database=os.getenv("POSTGRES_DB", "praktikum"),
+        user=os.getenv("POSTGRES_USER", "praktikum"),
+        password=os.getenv("POSTGRES_PASSWORD", "praktikum")
+    )
+
+
+def prepare_database():
+    """Valmistab ette staging skeemi ja andmetabeli Statistikaameti andmetele."""
+    print("Andmebaasi struktuuri kontroll ja ettevalmistamine...")
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("CREATE SCHEMA IF NOT EXISTS staging;")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS staging.stat_rahvastik (
+            aasta INT,
+            vanusegrupp VARCHAR(100),
+            maakond VARCHAR(150),
+            sugu VARCHAR(50),
+            rahvus VARCHAR(100),
+            elanike_arv INT,
+            PRIMARY KEY (aasta, vanusegrupp, maakond, sugu, rahvus)
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✓ Staging tabel `staging.stat_rahvastik` on valmis.")
+
+
+def parse_and_insert_json_stat(data):
+    """Parsib keerulise json-stat2 formaadi lamedaks tabeliks ja salvestab baasi."""
+    print("Alustan json-stat2 formaadi parsimist ja andmebaasi laadimist...")
+    
+    # 1. Võtame vastusest dimensioonide järjekorra ja tekstilised väärtused
+    # json-stat2 puhul määrab 'id' massiivi järjekord ära, mis pidi tsüklid jooksevad
+    dimension_ids = data['id'] 
+    dimensions = data['dimension']
+    
+    # Kogume iga dimensiooni tekstilised väärtused (valueTexts) õiges järjekorras
+    dim_lists = []
+    for dim_id in dimension_ids:
+        # Kasutame 'category' -> 'label' väärtuseid (Mehed, Naised jne)
+        labels = list(dimensions[dim_id]['category']['label'].values())
+        dim_lists.append(labels)
+        
+    # 2. Võtame tegelikud andmeväärtused (elanike arvud)
+    values_list = data['value']
+    
+    # 3. Genereerime kõik võimalikud dimensioonide kombinatsioonid täpselt API järjekorras
+    # itertools.product teeb ristkorrutise (nt: 2024 -> 0-4 -> Harju -> Mehed -> Eestlased)
+    all_combinations = list(itertools.product(*dim_lists))
+    
+    # Kontroll, et andmepunktide arv klapiks kombinatsioonidega
+    if len(all_combinations) != len(values_list):
+        print(f"⚠️ Hoiatus: Kombinatsioonide arv ({len(all_combinations)}) ei kattu väärtuste arvuga ({len(values_list)})!")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    batch = []
+    inserted_count = 0
+    
+    # Kaardistame dimensioonide positsioonid dünaamiliselt, et kood ei sõltuks järjekorrast
+    aasta_idx = dimension_ids.index("Aasta")
+    vanus_idx = dimension_ids.index("Vanuserühm")
+    maakond_idx = dimension_ids.index("Maakond")
+    sugu_idx = dimension_ids.index("Sugu")
+    rahvus_idx = dimension_ids.index("Rahvus")
+
+    for idx, combo in enumerate(all_combinations):
+        value = values_list[idx]
+        
+        # Kui väärtus puudub või on null (andmetes tühjus), siis võime selle vahele jätta või panna 0
+        if value is None:
+            continue
+            
+        aasta = int(combo[aasta_idx])
+        vanusegrupp = combo[vanus_idx]
+        maakond = combo[maakond_idx]
+        sugu = combo[sugu_idx]
+        rahvus = combo[rahvus_idx]
+        elanike_arv = int(value)
+        
+        batch.append((aasta, vanusegrupp, maakond, sugu, rahvus, elanike_arv))
+        
+        if len(batch) >= BATCH_SIZE:
+            insert_batch(cur, batch)
+            conn.commit()
+            inserted_count += len(batch)
+            print(f"   .. andmebaasi lükatud {inserted_count} rida ..")
+            batch = []
+            
+    # Viimased jäänused
+    if batch:
+        insert_batch(cur, batch)
+        conn.commit()
+        inserted_count += len(batch)
+
+    cur.close()
+    conn.close()
+    print(f"✓ Valmis! Staging kihti laeti edukalt {inserted_count} rida.")
+
+
+def insert_batch(cur, batch_data):
+    """Teostab kiire mass-salvestuse (Upsert režiimis)."""
+    query = """
+        INSERT INTO staging.stat_rahvastik (
+            aasta, vanusegrupp, maakond, sugu, rahvus, elanike_arv
+        ) VALUES %s
+        ON CONFLICT (aasta, vanusegrupp, maakond, sugu, rahvus) DO UPDATE SET
+            elanike_arv = EXCLUDED.elanike_arv;
+    """
+    execute_values(cur, query, batch_data)
+
 
 def run_statistikaamet_pipeline():
     print(f"=== STATISTIKAAMETI PIPELINE KÄIVITATUD (Tabel {TABELI_KOOD}) ===")
@@ -47,7 +155,8 @@ def run_statistikaamet_pipeline():
         print("❌ VIGA: `.env` failist ei leitud muutujat STAT_API_URL!")
         return
 
-    # Määramise spetsiaalsed päised, mida PxWeb API sageli ootab
+    prepare_database()
+
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Accept": "application/json"
@@ -55,8 +164,6 @@ def run_statistikaamet_pipeline():
 
     try:
         print(f"Teen päringu aadressile: {full_url}")
-        
-        # Kasutame json.dumps(), et tagada puhas UTF-8 string, ja lisame headers
         response = requests.post(
             full_url, 
             data=json.dumps(payload, ensure_ascii=False).encode('utf-8'), 
@@ -67,14 +174,17 @@ def run_statistikaamet_pipeline():
             data = response.json()
             print("✓ Andmed edukalt kätte saadud!")
             print("-" * 50)
-            print(json.dumps(data, indent=2, ensure_ascii=False)[:800])
+            
+            # Käivitame parsimise ja salvestamise
+            parse_and_insert_json_stat(data)
+            
         else:
             print(f"❌ Viga! Server vastas staatuse koodiga: {response.status_code}")
-            print("--- Serveri vastus ---")
             print(response.text)
             
     except Exception as e:
         print(f"❌ Võrgu- või süsteemiviga päringu tegemisel: {e}")
+
 
 if __name__ == "__main__":
     run_statistikaamet_pipeline()
