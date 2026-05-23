@@ -6,6 +6,8 @@ RUN pip install --no-cache-dir \
     requests \
     python-dotenv \
     psycopg2-binary \
-    beautifulsoup4
+    beautifulsoup4 \
+    pandas \
+    sqlalchemy
 
 CMD ["bash"]

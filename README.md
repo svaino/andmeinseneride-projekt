@@ -66,10 +66,10 @@ Kui port on hõivatud, muuda `.env` failis väärtusi `DB_PORT_HOST` või `DASHB
 
 ## Käivitamine
 
-Mine näidisprojekti kausta:
+Mine projekti kausta:
 
 ```bash
-cd naidisprojekt-ilmaandmed
+cd andmeinseneride-projekt
 ```
 
 Loo `.env` fail. See fail sisaldab kohaliku arenduskeskkonna seadeid ja seda ei laadita GitHubi.
@@ -78,7 +78,7 @@ Loo `.env` fail. See fail sisaldab kohaliku arenduskeskkonna seadeid ja seda ei 
 cp .env.example .env
 ```
 
-Käivita teenused. Scheduler ehk ajastaja teeb esimese laadimise käivitumisel ise, sest `.env.example` failis on `RUN_ON_STARTUP=true`.
+# Käivita teenused. Scheduler ehk ajastaja teeb esimese laadimise käivitumisel  ise, sest `.env.example` failis on `RUN_ON_STARTUP=true`.
 
 ```bash
 docker compose up -d --build
@@ -90,6 +90,19 @@ Kui sul oli sama projekt vanema skeemiga juba käivitatud, kustuta enne vana and
 docker compose down -v
 docker compose up -d --build
 ```
+# meie projektis: Käivita skriptid:
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/01_load_statistikaamet.py
+```
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_load_ariregister.py
+```
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
+```
+
+
 
 Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
 
