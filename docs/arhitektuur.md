@@ -6,18 +6,18 @@ Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatus
 
 ## Mõõdikud
 
-1. Välitegevuse sobivuse skoor tunnipõhiselt.
-2. Parimad 3-tunnised ajaaknad asukoha ja päeva lõikes.
+1. Top x / Uued ettevõtted maakondade ..
+2. Juhatuse muudatused ...
 3. Toetav kontekst: rahvastikujaotus maakondades.
 
 ## Andmeallikad
 
 | Allikas | Tüüp | Muutuvus ajas | Kasutus |
 |---|---|---|---|
-| Open-Meteo Forecast API | Avalik HTTP API | Prognoos muutub ajas, kui ilmaennustust uuendatakse | Põhiandmevoog |
-| `mart.dim_location` | Staatiline dimensioonitabel | Muutub ainult projekti muutmisel | Asukohtade püsivad tunnused ja API päringu koordinaadid |
-
-Põhiandmevoog tuleb Open-Meteo API-st. Staatiline asukohadimensioon määrab, milliste asulate kohta prognoos laaditakse.
+| Äriregistri avaandmete API | Avalik HTTP API | Igapäevased muutuste väljavõtted | Põhiandmevoog |
+| Statistikaameti PxWeb API | Avalik JSON-stat API | Uueneb kord kuus | Rahvastiku andmed maakondade kaupa |
+| EMTAK_2025.csv | Staatiline failiressurss | Automaatselt ei muutu. Muutub kui ise muuta | EMTAK tasemete nimekiri |
+| maakond.geojson | Staatiline failiressurss | Automaatselt ei muutu. Muutub kui ise muuta | Maakondade dimensioonitabel? |
 
 ## Andmevoog
 
@@ -43,33 +43,31 @@ flowchart LR
 
 | Kiht | Roll |
 |---|---|
-| `staging` | Hoiab API-st saadud tunnipõhiseid ridu võimalikult allikalähedaselt. |
-| `mart` | Hoiab asukohadimensiooni, ilmaennustuse fakti, tunniskoore, ajaaknaid ja koondeid. |
+| `staging` | Hoiab API-st saadud read allikalähedaselt. |
+| `intermediate` | Andmete transformatsiooni kiht. |
+| `marts` | Analüütikaks ehitatud tabelid (Supersetti loetav kiht). |
 | `quality` | Hoiab kvaliteeditestide tulemusi. |
 
-Iga töövoo käivitus saab uue `run_id`. Vanad API vastused jäävad `staging` kihti alles. `mart.dim_location` jääb staatiliseks dimensiooniks, teised `mart` tabelid ehitatakse uuesti ja näidikulaud loeb viimase eduka laadimise vaateid.
+Iga töövoo käivitus saab uue `run_id`. Vanad API vastused jäävad `staging` kihti alles. `mart.dim_location` jääb staatiliseks dimensiooniks, teised `mart` tabelid ehitatakse uuesti ja näidikulaud loeb viimase eduka laadimise vaateid. ??
 
 ## Tööjaotus
 
-| Roll | Vastutus |
-|---|---|
+| Roll | Vastutus | Täitja |
+|---|---|---|
 | Andmeallika omanik | Kontrollib API vastust ja kirjutab sissevõtu loogika. |
 | Transformatsioonide omanik | Kirjutab `mart` kihi tabelid ja mõõdikute arvutuse. |
 | Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid. |
-| Näidikulaua omanik | Ehitab Streamliti vaate ja seob selle äriküsimusega. |
+| Näidikulaua omanik | Ehitab Superseti dashboardi ja seob selle äriküsimusega. |
 
-Väikeses grupis võib üks inimene täita mitut rolli.
 
 ## Riskid
 
 | Risk | Mõju | Maandus |
 |---|---|---|
-| API ei vasta või võrgupäring ebaõnnestub | Andmeid ei saa värskendada | Skript annab selge veateate; vajadusel käivita hiljem uuesti. |
-| Prognoosi väljade nimed muutuvad | Laadimine katkeb | `validate_hourly_payload` kontrollib nõutud väljade olemasolu. |
-| Skoori kaalud ei sobi kasutusjuhuga | Näidikulaud soovitab valesid ajaaknaid | Kaalud on SQL-is nähtavad ja muudetavad failis `scripts/01_transform.sql`. |
-| Näidikulaud näitab vanu andmeid | Otsus põhineb aegunud infol | Näidikulaual kuvatakse viimase laadimise aeg. |
-| Scheduler ei käivitu | Andmed ei värskene automaatselt | Kontrolli `docker compose logs -f scheduler` väljundit ja `.env` faili `PIPELINE_CRON` väärtust. |
+| Äriregistri või Statistikaameti API limiteerib päringute arvu või on ajutiselt maas | Andmeid ei saa värskendada. Vananenud andmed. | Skript annab veateate ning vajadusel uuesti käivitada. |
+| Andmetüüpide ootamatu muutumine | Andmete laadimine peatub kuni koodi parandamiseni. | Test, mis kontrollib, kas parsimisel tuli andmeid. |
+| EMTAK tegevusvaldkondi on väga palju | Dashboard ei ole hästi loetav. | Tegevusvaldkonad agregeerida.
 
 ## Privaatsus ja turve
 
-Projekt kasutab ainult avalikke ilmaandmeid. Isikuandmeid ei koguta. Andmebaasi kasutajanimi ja parool tulevad `.env` failist. Päris `.env` faili ei tohi reposse lisada.
+Projekt kasutab ainult avalikke andmeid. Isikuandmeid ei käsitleta. Andmebaasi, Airflow ja Superseti kasutajad ning parood on ainult .env failis, mis on .gitogner. Repos on ainult .env.example koos näiteväärtustega.
