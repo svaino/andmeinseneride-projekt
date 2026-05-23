@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     beautifulsoup4 \
     pandas \
-    sqlalchemy
+    sqlalchemy \
+    geopandas
 
 CMD ["bash"]
