@@ -1,18 +1,14 @@
 # Arhitektuur
 
-Esimesel nädalal vaja esitada
-
-See fail on näidis projektitöö esimese nädala väljundiks. Enda projektis asenda siinne sisu oma teema ja otsustega.
-
 ## Äriküsimus
 
-Millistes Eesti asulates ja millistel järgmistel päevadel on ilm kõige sobivam välitööde, rattaga liikumise või õues toimuva ürituse planeerimiseks?
+Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?
 
 ## Mõõdikud
 
 1. Välitegevuse sobivuse skoor tunnipõhiselt.
 2. Parimad 3-tunnised ajaaknad asukoha ja päeva lõikes.
-3. Peamine põhjus, miks aken sobib või ei sobi: sademed, tuul, temperatuur või pime aeg.
+3. Toetav kontekst: rahvastikujaotus maakondades.
 
 ## Andmeallikad
 
