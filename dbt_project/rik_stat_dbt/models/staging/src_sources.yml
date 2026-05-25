@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: postgres_staging
+    schema: staging
+    tables:
+      - name: stat_rahvastik
+      - name: ariregister_uldandmed  # <-- Kontrolli, et siin on u-ga
