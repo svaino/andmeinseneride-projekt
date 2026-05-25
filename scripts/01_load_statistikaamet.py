@@ -53,6 +53,7 @@ def prepare_database():
             sugu VARCHAR(50),
             rahvus VARCHAR(100),
             elanike_arv INT,
+            loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (aasta, vanusegrupp, maakond, sugu, rahvus)
         );
     """)
@@ -67,25 +68,20 @@ def parse_and_insert_json_stat(data):
     print("Alustan json-stat2 formaadi parsimist ja andmebaasi laadimist...")
     
     # 1. Võtame vastusest dimensioonide järjekorra ja tekstilised väärtused
-    # json-stat2 puhul määrab 'id' massiivi järjekord ära, mis pidi tsüklid jooksevad
     dimension_ids = data['id'] 
     dimensions = data['dimension']
     
-    # Kogume iga dimensiooni tekstilised väärtused (valueTexts) õiges järjekorras
     dim_lists = []
     for dim_id in dimension_ids:
-        # Kasutame 'category' -> 'label' väärtuseid (Mehed, Naised jne)
         labels = list(dimensions[dim_id]['category']['label'].values())
         dim_lists.append(labels)
         
-    # 2. Võtame tegelikud andmeväärtused (elanike arvud)
+    # 2. Võtame tegelikud andmeväärtused
     values_list = data['value']
     
-    # 3. Genereerime kõik võimalikud dimensioonide kombinatsioonid täpselt API järjekorras
-    # itertools.product teeb ristkorrutise (nt: 2024 -> 0-4 -> Harju -> Mehed -> Eestlased)
+    # 3. Genereerime kõik võimalikud dimensioonide kombinatsioonid
     all_combinations = list(itertools.product(*dim_lists))
     
-    # Kontroll, et andmepunktide arv klapiks kombinatsioonidega
     if len(all_combinations) != len(values_list):
         print(f"⚠️ Hoiatus: Kombinatsioonide arv ({len(all_combinations)}) ei kattu väärtuste arvuga ({len(values_list)})!")
 
@@ -95,7 +91,6 @@ def parse_and_insert_json_stat(data):
     batch = []
     inserted_count = 0
     
-    # Kaardistame dimensioonide positsioonid dünaamiliselt, et kood ei sõltuks järjekorrast
     aasta_idx = dimension_ids.index("Aasta")
     vanus_idx = dimension_ids.index("Vanuserühm")
     maakond_idx = dimension_ids.index("Maakond")
@@ -105,7 +100,6 @@ def parse_and_insert_json_stat(data):
     for idx, combo in enumerate(all_combinations):
         value = values_list[idx]
         
-        # Kui väärtus puudub või on null (andmetes tühjus), siis võime selle vahele jätta või panna 0
         if value is None:
             continue
             
@@ -125,7 +119,6 @@ def parse_and_insert_json_stat(data):
             print(f"   .. andmebaasi lükatud {inserted_count} rida ..")
             batch = []
             
-    # Viimased jäänused
     if batch:
         insert_batch(cur, batch)
         conn.commit()
@@ -137,13 +130,15 @@ def parse_and_insert_json_stat(data):
 
 
 def insert_batch(cur, batch_data):
-    """Teostab kiire mass-salvestuse (Upsert režiimis)."""
+    """Teostab kiire mass-salvestuse (Upsert režiimis) ja värskendab loaded_at aega konflikti korral."""
+    # MUUDATUS: Konflikti korral uuendatakse elanike arvu ning loaded_at seatakse väärtusele NOW()
     query = """
         INSERT INTO staging.stat_rahvastik (
             aasta, vanusegrupp, maakond, sugu, rahvus, elanike_arv
         ) VALUES %s
         ON CONFLICT (aasta, vanusegrupp, maakond, sugu, rahvus) DO UPDATE SET
-            elanike_arv = EXCLUDED.elanike_arv;
+            elanike_arv = EXCLUDED.elanike_arv,
+            loaded_at = NOW();
     """
     execute_values(cur, query, batch_data)
 
@@ -175,7 +170,6 @@ def run_statistikaamet_pipeline():
             print("✓ Andmed edukalt kätte saadud!")
             print("-" * 50)
             
-            # Käivitame parsimise ja salvestamise
             parse_and_insert_json_stat(data)
             
         else:

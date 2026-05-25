@@ -30,12 +30,13 @@ def get_db_connection():
 
 
 def prepare_database():
-    """Valmistab ette staging skeemi ja andmetabeli."""
+    """Valmistab ette staging skeemi ja andmetabeli koos loaded_at veeruga."""
     print("Andmebaasi struktuuri kontroll ja ettevalmistamine...")
     conn = get_db_connection()
     cur = conn.cursor()
     
     cur.execute("CREATE SCHEMA IF NOT EXISTS staging;")
+    # LISATUD: loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP veerg
     cur.execute("""
         CREATE TABLE IF NOT EXISTS staging.ariregister_uldandmed (
             reg_kood VARCHAR(50) PRIMARY KEY,
@@ -46,7 +47,8 @@ def prepare_database():
             staatus VARCHAR(100),
             emtak_kood VARCHAR(50),
             emtak_nimetus VARCHAR(255),
-            emtak_versioon VARCHAR(50)
+            emtak_versioon VARCHAR(50),
+            loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
     
@@ -94,7 +96,8 @@ def convert_date_format(date_str):
 
 
 def save_batch(cur, batch_data):
-    """Teostab andmete mass-salvestuse (Upsert) andmebaasi."""
+    """Teostab andmete mass-salvestuse (Upsert) andmebaasi ja uuendab loaded_at ajatemplit."""
+    # MUUDATUS: Konflikti korral uuendatakse andmeid ja loaded_at väärtuseks seatakse NOW()
     insert_query = """
         INSERT INTO staging.ariregister_uldandmed (
             reg_kood, nimi, oiguslik_vorm, asutamise_kuupaev, maakond, staatus, emtak_kood, emtak_nimetus, emtak_versioon
@@ -108,7 +111,8 @@ def save_batch(cur, batch_data):
             staatus = EXCLUDED.staatus,
             emtak_kood = EXCLUDED.emtak_kood,
             emtak_nimetus = EXCLUDED.emtak_nimetus,
-            emtak_versioon = EXCLUDED.emtak_versioon;
+            emtak_versioon = EXCLUDED.emtak_versioon,
+            loaded_at = NOW();
     """
     execute_values(cur, insert_query, batch_data)
 
@@ -215,7 +219,6 @@ def download_and_process_xml():
                             company["oiguslik_vorm"] = text
 
                         elif tag == "staatus_tekstina" and "yldandmed" in path:
-                            # Prefer yldandmed/staatus_tekstina, not random nested statuses
                             company["staatus"] = text
 
                         # Address / county
@@ -233,7 +236,6 @@ def download_and_process_xml():
                             elif tag == "emtak_versioon_tekstina":
                                 activity["versioon"] = text
                             elif tag == "emtak_versioon":
-                                # fallback if text version is missing
                                 activity["versioon"] = activity["versioon"] or text
                             elif tag == "on_pohitegevusala":
                                 activity["on_pohi"] = text.lower() in ("true", "jah", "1")
@@ -273,7 +275,7 @@ def download_and_process_xml():
                                 save_batch(cur, batch)
                                 conn.commit()
                                 total_inserted += len(batch)
-                                print(f"   .. laaditud {total_inserted} ettevõtet ..")
+                                print(f"  .. laaditud {total_inserted} ettevõtet ..")
                                 batch = []
 
                         company = None

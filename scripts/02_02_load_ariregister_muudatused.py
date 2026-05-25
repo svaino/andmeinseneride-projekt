@@ -34,11 +34,11 @@ def seadista_postgres_staging():
     cursor = conn.cursor()
     
     cursor.execute("CREATE SCHEMA IF NOT EXISTS staging;")
-    cursor.execute("DROP TABLE IF EXISTS staging.stg_ariregister_muudatused;")
+    cursor.execute("DROP TABLE IF EXISTS staging.ariregister_muudatused;")
     
     # Loome tabeli: Lisatud nõutud indikaatorveerg 'isikuandmed' (Y/N)
     cursor.execute('''
-        CREATE TABLE staging.stg_ariregister_muudatused (
+        CREATE TABLE staging.ariregister_muudatused (
             id SERIAL PRIMARY KEY,
             ariregistri_kood INT,
             arinimi VARCHAR(255),
@@ -120,7 +120,7 @@ def töötle_ja_salvesta(xml_data, kuupaev_str, db_conn, db_cursor):
         if not kanded:
             # Juhtum A: Ainult kandeväline muudatus (kandeid pole)
             db_cursor.execute('''
-                INSERT INTO staging.stg_ariregister_muudatused 
+                INSERT INTO staging.ariregister_muudatused 
                 (ariregistri_kood, arinimi, oiguslik_vorm, kande_nr, kande_kuupaev, kande_liik_tekst, kandevaline_muudatus, isikuandmed)
                 VALUES (%s, %s, %s, NULL, %s, 'Kandeväline muudatus', 1, %s);
             ''', (ari_kood, arinimi, vorm, kuupaev_str, kv_isikud))
@@ -140,7 +140,7 @@ def töötle_ja_salvesta(xml_data, kuupaev_str, db_conn, db_cursor):
                     kande_kuupaev = kande_kuupaev.replace('Z', '')
 
                 db_cursor.execute('''
-                    INSERT INTO staging.stg_ariregister_muudatused 
+                    INSERT INTO staging.ariregister_muudatused 
                     (ariregistri_kood, arinimi, oiguslik_vorm, kande_nr, kande_kuupaev, kande_liik_tekst, kandevaline_muudatus, isikuandmed)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 ''', (ari_kood, arinimi, vorm, kande_nr, kande_kuupaev, kande_tekst, on_kandevaline, isikuandmed_indikaator))
