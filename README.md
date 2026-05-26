@@ -96,12 +96,24 @@ docker compose up -d --build
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/01_load_statistikaamet.py
 ```
 ```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_load_ariregister.py
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_01_load_ariregister_yldandmed.py
 ```
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_02_load_ariregister_muudatused.py
+```
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts/02_03_load_ariregister_registrikaart(äkki).py"
+```
+
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
 ```
-
+dbt käivitamiseks
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
+```
 
 
 Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
