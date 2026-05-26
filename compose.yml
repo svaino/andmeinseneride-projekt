@@ -53,6 +53,7 @@ services:
     volumes:
       - ./scripts:/app/scripts
       - ./data:/app/data
+      - ./dbt_project:/app/dbt_project
     working_dir: /app
     tty: true
 
