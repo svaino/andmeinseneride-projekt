@@ -7,7 +7,7 @@ agregeeritud AS (
         maakond,
         COUNT(DISTINCT reg_kood) AS aktiivsete_ettevotete_arv
     FROM yldandmed
-    WHERE staatus = 'Registris'
+    WHERE staatus = 'Registrisse kantud'
     GROUP BY 1
 )
 

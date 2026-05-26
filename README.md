@@ -114,6 +114,15 @@ dbt käivitamiseks
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
 ```
+# dbt-s on olemas seeds - seda saab käivitada eraldi
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed"
+```
+# või koos 
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed && dbt run"
+```
+
 
 
 Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
