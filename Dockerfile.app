@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir \
     beautifulsoup4 \
     pandas \
     sqlalchemy \
-    geopandas 
+    geopandas \
+    "dbt-postgres~=1.10.0"
 
 CMD ["bash"]
