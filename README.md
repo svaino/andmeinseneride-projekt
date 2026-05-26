@@ -104,7 +104,7 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/
 ```
 
 ```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_03_load_ariregister_registrikaart(äkki).py
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts/02_03_load_ariregister_registrikaart(äkki).py"
 ```
 
 ```bash
