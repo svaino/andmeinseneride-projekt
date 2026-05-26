@@ -16,6 +16,12 @@ API_URL = "https://ariregxmlv6.rik.ee/"
 ARIREGISTER_USER = os.getenv("ARIREGISTER_USER")
 ARIREGISTER_PASSWORD = os.getenv("ARIREGISTER_PASSWORD")
 
+if not ARIREGISTER_USER:
+    raise RuntimeError("Missing ARIREGISTER_USER environment variable")
+
+if not ARIREGISTER_PASSWORD:
+    raise RuntimeError("Missing ARIREGISTER_PASSWORD environment variable")
+
 #DB_HOST = os.getenv("POSTGRES_HOST", "localhost")  
 #DB_PORT = os.getenv("DB_PORT_HOST", "5432")
 
@@ -62,6 +68,7 @@ def seadista_postgres_staging():
 # 3. SOAP XML PÄRINGU PANDI (ÜHE PÄEVA KOHTA)
 # ==========================================
 def küsi_päeva_muudatused(kuupaev_str):
+
     """Koostab dokumentatsioonile vastava SOAP XML ümbriku ja teeb post-päringu."""
     
     soap_body = f"""<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:prod="http://arireg.x-road.eu/producer/">

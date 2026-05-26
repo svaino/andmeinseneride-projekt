@@ -31,7 +31,7 @@ def get_db_connection():
     """Loob ühenduse PostgreSQL andmebaasiga."""
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432"),
+        port=os.getenv("DB_PORT_HOST", "5432"),
         database=os.getenv("POSTGRES_DB", "praktikum"),
         user=os.getenv("POSTGRES_USER", "praktikum"),
         password=os.getenv("POSTGRES_PASSWORD", "praktikum")
