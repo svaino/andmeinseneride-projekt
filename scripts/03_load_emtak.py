@@ -31,15 +31,28 @@ df1.to_sql('emtak_2025', engine, schema='staging', if_exists='replace', index=Fa
 print(f"✅ esimene_tabel laetud: {len(df1)} rida")
 
 # Teine, üleminek 2008 --> 2025 CSV
-df2 = pd.read_csv('/app/data/EMTAK_uleminekutabel_2008_EMTAK_2025.csv', sep=';')
-# Lisaveerud id ja created_at jaoks
+df2 = pd.read_csv('/app/data/EMTAK_uleminekutabel_2008_EMTAK_2025.csv', 
+                  sep=';', 
+                  quotechar='"', 
+                  engine='python',
+                  dtype=str)
+
+# 1. Esmalt nimeta veerud ümber
+df2.columns = df2.columns.str.lower().str.replace(' ', '_').str.replace('?', '', regex=False)
+
+# 2. Lisa id ja created_at
 df2.insert(0, 'id', range(1, len(df2) + 1))
 df2['created_at'] = datetime.now(timezone.utc)
 
-# Muudan veergude pealkirjad viisakaks
-df2.columns = df2.columns.str.lower().str.replace(' ', '_').str.replace('?', '', regex=False)
-
-df2.to_sql('emtak_2008_2025', engine, schema='staging', if_exists='replace', index=False)
+# 3. Salvesta
+from sqlalchemy import String, BigInteger, TIMESTAMP
+df2.to_sql('emtak_2008_2025', engine, schema='staging', if_exists='replace', index=False,
+           dtype={
+               'id': BigInteger(),
+               'kood_emtak_2008': String(),
+               'kood_emtak_2025': String(),
+               'created_at': TIMESTAMP(timezone=True)
+           })
 print(f"✅ teine_tabel laetud: {len(df2)} rida")
 
 

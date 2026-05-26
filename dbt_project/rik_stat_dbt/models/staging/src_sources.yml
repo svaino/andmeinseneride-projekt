@@ -6,3 +6,5 @@ sources:
     tables:
       - name: stat_rahvastik
       - name: ariregister_uldandmed  # <-- Kontrolli, et siin on u-ga
+      - name: emtak_2025
+      - name: emtak_2008_2025
