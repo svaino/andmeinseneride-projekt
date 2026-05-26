@@ -57,6 +57,10 @@ def prepare_database():
             PRIMARY KEY (aasta, vanusegrupp, maakond, sugu, rahvus)
         );
     """)
+    cur.execute("""
+        ALTER TABLE staging.stat_rahvastik
+        ADD COLUMN IF NOT EXISTS loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    """)
     conn.commit()
     cur.close()
     conn.close()

@@ -47,6 +47,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      DBT_PROFILES_DIR: /app/dbt_project/rik_stat_dbt
     depends_on:
       db:
         condition: service_healthy
