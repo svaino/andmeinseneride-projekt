@@ -16,8 +16,11 @@ API_URL = "https://ariregxmlv6.rik.ee/"
 ARIREGISTER_USER = os.getenv("ARIREGISTER_USER")
 ARIREGISTER_PASSWORD = os.getenv("ARIREGISTER_PASSWORD")
 
-DB_HOST = os.getenv("POSTGRES_HOST", "localhost")  
-DB_PORT = os.getenv("DB_PORT_HOST", "5432")
+#DB_HOST = os.getenv("POSTGRES_HOST", "localhost")  
+#DB_PORT = os.getenv("DB_PORT_HOST", "5432")
+
+DB_HOST = os.getenv("DB_HOST", "db")  
+DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("POSTGRES_DB")
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASS = os.getenv("POSTGRES_PASSWORD")

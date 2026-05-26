@@ -9,6 +9,6 @@ RUN pip install --no-cache-dir \
     beautifulsoup4 \
     pandas \
     sqlalchemy \
-    geopandas
+    geopandas 
 
 CMD ["bash"]
