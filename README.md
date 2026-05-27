@@ -110,7 +110,7 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
 ```
-dbt käivitamiseks
+dbt käivitamiseks - seda oli vaja enne seedi
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
 ```
@@ -122,6 +122,8 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed && dbt run"
 ```
+
+# Superset Ui on aadressil: http://localhost:8088 ja sinna saab logida nagu env failis kirjas (a-n, a-n)
 
 
 

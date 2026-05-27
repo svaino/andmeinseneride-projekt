@@ -57,25 +57,25 @@ print(f"✅ teine_tabel laetud: {len(df2)} rida")
 
 
 # Tekitan view (ajutine?), millest saab võtta alamkoodidele ülimad tegevusala tasemed
-with engine.connect() as conn:
-    conn.execute(text("""
-        CREATE OR REPLACE VIEW staging.emtak_2025_juur AS
-        WITH RECURSIVE hierarhia AS (
-            SELECT kood, vanem, kood AS juur
-            FROM staging.emtak_2025
-            WHERE vanem IS NULL
-
-            UNION ALL
-
-            SELECT e.kood, e.vanem, h.juur
-            FROM staging.emtak_2025 e
-            JOIN hierarhia h ON e.vanem = h.kood
-        )
-        SELECT 
-            h.kood, 
-            h.juur AS kõrgeim_vanem,
-            e.tegevusala_tekst AS kõrgeim_vanem_nimi
-        FROM hierarhia h
-        JOIN staging.emtak_2025 e ON e.kood = h.juur;
-    """))
-    conn.commit()
+#  with engine.connect() as conn:
+#    conn.execute(text("""
+#        CREATE OR REPLACE VIEW staging.emtak_2025_juur AS
+#        WITH RECURSIVE hierarhia AS (
+#           SELECT kood, vanem, kood AS juur
+#            FROM staging.emtak_2025
+#            WHERE vanem IS NULL
+#
+#            UNION ALL
+#
+#            SELECT e.kood, e.vanem, h.juur
+#            FROM staging.emtak_2025 e
+#            JOIN hierarhia h ON e.vanem = h.kood
+#        )
+#        SELECT 
+#            h.kood, 
+#            h.juur AS kõrgeim_vanem,
+#            e.tegevusala_tekst AS kõrgeim_vanem_nimi
+#        FROM hierarhia h
+#        JOIN staging.emtak_2025 e ON e.kood = h.juur;
+#    """))
+#    conn.commit()

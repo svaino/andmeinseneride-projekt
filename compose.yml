@@ -57,6 +57,67 @@ services:
     working_dir: /app
     tty: true
 
+  superset-db:
+    image: postgres:16
+    container_name: andmeinseneeria-superset-db
+    environment:
+      POSTGRES_USER: ${SUPERSET_DB_USER}
+      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD}
+      POSTGRES_DB: ${SUPERSET_DB_NAME}
+    volumes:
+      - superset-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPERSET_DB_USER} -d ${SUPERSET_DB_NAME}"]
+      interval: 5s
+      retries: 10
+    restart: always
+
+  superset-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    container_name: andmeinseneeria-superset-init
+    depends_on:
+      superset-db:
+        condition: service_healthy
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - superset-home:/app/superset_home
+    environment:
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
+      SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
+      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+    command:
+      - /bin/sh
+      - -c
+      - "superset db upgrade && superset fab create-admin --username $${ADMIN_USERNAME} --firstname Admin --lastname User --email $${ADMIN_EMAIL} --password $${ADMIN_PASSWORD} && superset init"
+    restart: "no"
+
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    container_name: andmeinseneeria-superset
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    ports:
+      - "${SUPERSET_PORT_HOST:-8088}:8088"
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - superset-home:/app/superset_home
+    environment:
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
+      SECRET_KEY: ${SUPERSET_SECRET_KEY}
+    command: ["/app/docker/entrypoints/run-server.sh"]
+    restart: always
+
+
+
   # --- Näidikulaud ---
   # Streamliti põhine näide. Superset-põhise stacki puhul vaata
   # naidisprojekt-ilmaandmed-dbt-ja-airflow/compose.yml.
@@ -83,3 +144,5 @@ services:
 
 volumes:
   pgdata:
+  superset-db-volume:
+  superset-home:
