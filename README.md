@@ -110,6 +110,11 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
 ```
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/04_load_geo.py
+```
+
 dbt käivitamiseks - seda oli vaja enne seedi
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
@@ -122,10 +127,27 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed && dbt run"
 ```
+# kui muuta seed faili sisu, siis uuendada seed põhjalikult:
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed --full-refresh"
+```
+
 
 # Superset Ui on aadressil: http://localhost:8088 ja sinna saab logida nagu env failis kirjas (a-n, a-n)
 
 
+# Superset, andmeühenduse loomine
+Mine Settings → Database Connections → + Database
+Vali andmebaasi tüüp: PostgreSQL
+Täida ühenduse andmed:
+Host: db
+Port: 5432
+Database name: väärtus .env-st (POSTGRES_DB)
+Username / Password: väärtused .env-st (POSTGRES_USER / POSTGRES_PASSWORD)
+Klõpsa Connect, peaks näitama „Database connected"
+Vajuta Finish
+
+# Supersetiga töö: Mine ülevalt SQL/SQLLab
 
 Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
 
