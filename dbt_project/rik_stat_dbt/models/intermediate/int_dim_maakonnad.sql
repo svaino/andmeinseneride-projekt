@@ -1,6 +1,7 @@
 SELECT
-    ROW_NUMBER() OVER (ORDER BY kuvajärjestus) AS maakond_id,
+    ROW_NUMBER() OVER (ORDER BY kuvajarjestus) AS maakond_id,
     maakond_nimi,
+    iso_kood,
     regioon,
-    kuvajärjestus
+    kuvajarjestus
 FROM {{ ref('dim_maakonnad') }}

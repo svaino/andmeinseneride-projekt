@@ -31,8 +31,8 @@ SELECT
 FROM {{ source('postgres_staging', 'ariregister_uldandmed') }} au
 CROSS JOIN LATERAL (
     SELECT EXTRACT(YEAR FROM AGE(asutamise_kuupaev))::int AS aastaid
-) n
+    ) n
 LEFT JOIN (SELECT DISTINCT ON  (kood_emtak_2008) kood_emtak_2008, kood_emtak_2025 
-FROM {{ source('postgres_staging', 'emtak_2008_2025') }} ORDER BY kood_emtak_2008 ) e825 ON e825.kood_emtak_2008::text = au.emtak_kood
+    FROM {{ source('postgres_staging', 'emtak_2008_2025') }} ORDER BY kood_emtak_2008 ) e825 ON e825.kood_emtak_2008::text = au.emtak_kood
 
 WHERE EXTRACT(YEAR FROM AGE(asutamise_kuupaev))::int < 6
