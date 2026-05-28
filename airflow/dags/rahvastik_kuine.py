@@ -4,8 +4,7 @@ import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
-DBT_DIR = "/opt/airflow/dbt_project/rik_stat_dbt"
-DBT = f"cd {DBT_DIR} && dbt"
+from include.dbt_config import DBT
 
 
 @dag(
@@ -27,24 +26,25 @@ def rahvastik_kuine():
 
     dbt_stg = BashOperator(
         task_id="dbt_run_staging_stat",
-        bash_command=f"{DBT} run --select stg_stat_rahvastik",
+        bash_command=f"{DBT} run --selector staging_stat",
+    )
+
+    dbt_intermediate = BashOperator(
+        task_id="dbt_run_intermediate",
+        bash_command=f"{DBT} run --selector layer_intermediate",
     )
 
     dbt_marts = BashOperator(
         task_id="dbt_run_marts",
-        bash_command=(
-            f"{DBT} run --select "
-            "mart_maakondade_statistika mart_ettevotlikus_6a "
-            "mart_elanikke_ettevõtte_kohta_20250101"
-        ),
+        bash_command=f"{DBT} run --selector layer_marts",
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=f"{DBT} test --select stg_stat_rahvastik",
+        bash_command=f"{DBT} test --select stg_stat_rahvastik+",
     )
 
-    lae >> dbt_stg >> dbt_marts >> dbt_test
+    lae >> dbt_stg >> dbt_intermediate >> dbt_marts >> dbt_test
 
 
 rahvastik_kuine()

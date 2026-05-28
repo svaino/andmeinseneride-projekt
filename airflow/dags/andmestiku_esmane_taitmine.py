@@ -4,8 +4,7 @@ import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
-DBT_DIR = "/opt/airflow/dbt_project/rik_stat_dbt"
-DBT = f"cd {DBT_DIR} && dbt"
+from include.dbt_config import DBT
 
 
 @dag(
@@ -17,9 +16,7 @@ DBT = f"cd {DBT_DIR} && dbt"
     doc_md="""
     Ühekordne (või harv) käivitus pärast repo kloonimist või kui staatilised failid muutuvad.
 
-    Laadib EMTAK CSV-d stagingusse, täidab dbt seemned (nt `dim_maakonnad`) ja
-    ehitab dimensioonivaated. `stg_ariregister_*` mudelid käivituvad
-    `ariregister_paevane` DAG-is pärast üldandmete laadimist.
+    Laadib EMTAK CSV-d stagingusse, täidab dbt seemned ja dimensioonivaated.
     """,
     default_args={
         "retries": 2,
@@ -37,12 +34,17 @@ def andmestiku_esmane_taitmine():
         bash_command=f"{DBT} seed",
     )
 
-    dbt_run_dims = BashOperator(
-        task_id="dbt_run_dimensions",
-        bash_command=f"{DBT} run --select int_dim_emtak int_dim_maakonnad",
+    dbt_deps = BashOperator(
+        task_id="dbt_deps",
+        bash_command=f"{DBT} deps",
     )
 
-    lae_emtak >> dbt_seed >> dbt_run_dims
+    dbt_run_dims = BashOperator(
+        task_id="dbt_run_dimensions",
+        bash_command=f"{DBT} run --selector bootstrap_dims",
+    )
+
+    lae_emtak >> dbt_seed >> dbt_deps >> dbt_run_dims
 
 
 andmestiku_esmane_taitmine()

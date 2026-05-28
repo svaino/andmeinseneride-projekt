@@ -4,8 +4,7 @@ import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
-DBT_DIR = "/opt/airflow/dbt_project/rik_stat_dbt"
-DBT = f"cd {DBT_DIR} && dbt"
+from include.dbt_config import DBT
 
 
 @dag(
@@ -17,8 +16,8 @@ DBT = f"cd {DBT_DIR} && dbt"
     doc_md="""
     Igapäevane Äriregistri voog.
 
-    Eeldab, et `andmestiku_esmane_taitmine` on käivitatud (dbt seed). Puuduvad
-    EMTAK või rahvastiku andmed laaditakse enne dbt sammu automaatselt.
+    dbt mudelid valitakse `selectors.yml` kaudu — uusi mudeleid lisades
+    Airflow DAG-e muuta ei pea.
     """,
     default_args={
         "retries": 3,
@@ -69,18 +68,16 @@ if not missing:
     sys.exit(0)
 
 print("Puuduvad tabelid:", ", ".join(missing))
-print("Laen EMTAK CSV-d ja ehitan int_dim_emtak vaate...")
+print("Laen EMTAK CSV-d ja ehitan dimensioonivaated...")
 subprocess.check_call(["python", "/opt/airflow/scripts/03_load_emtak.py"])
-subprocess.check_call(["bash", "-c", "{DBT} run --select int_dim_emtak"])
+subprocess.check_call(["bash", "-c", "{DBT} run --selector bootstrap_dims"])
 PY
 """,
     )
 
     dbt_stg = BashOperator(
         task_id="dbt_run_staging_rik",
-        bash_command=(
-            f"{DBT} run --select stg_ariregister_yldandmed stg_ariregister_viimased_6a"
-        ),
+        bash_command=f"{DBT} run --selector staging_rik",
     )
 
     tagab_rahvastik = BashOperator(
@@ -127,35 +124,42 @@ if need_seed:
     print("Käivitan dbt seed...")
     subprocess.check_call(["bash", "-c", "{DBT} seed"])
 
-if need_stat_stg or need_dim_mk:
-    print("Ehitan rahvastiku staging ja dimensioonivaated...")
-    subprocess.check_call(
-        ["bash", "-c", "{DBT} run --select stg_stat_rahvastik int_dim_maakonnad"]
-    )
+if need_stat_stg:
+    print("Ehitan rahvastiku staging vaate...")
+    subprocess.check_call(["bash", "-c", "{DBT} run --selector staging_stat"])
+
+if need_dim_mk:
+    print("Ehitan dimensioonivaated...")
+    subprocess.check_call(["bash", "-c", "{DBT} run --selector bootstrap_dims"])
 PY
 """,
     )
 
+    dbt_intermediate = BashOperator(
+        task_id="dbt_run_intermediate",
+        bash_command=f"{DBT} run --selector layer_intermediate",
+    )
+
     dbt_marts = BashOperator(
         task_id="dbt_run_marts",
-        bash_command=(
-            f"{DBT} run --select "
-            "int_ettevotete_arv_maakonniti int_ettevotete_arv_maakonniti_6a "
-            "mart_maakondade_statistika mart_ettevotlikus_6a "
-            "mart_elanikke_ettevõtte_kohta_20250101"
-        ),
+        bash_command=f"{DBT} run --selector layer_marts",
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=(
-            f"{DBT} test --select "
-            "stg_ariregister_yldandmed stg_ariregister_viimased_6a "
-            "int_ettevotete_arv_maakonniti int_ettevotete_arv_maakonniti_6a"
-        ),
+        bash_command=f"{DBT} test",
     )
 
-    lae_yldandmed >> lae_muudatused >> tagab_emtak >> dbt_stg >> tagab_rahvastik >> dbt_marts >> dbt_test
+    (
+        lae_yldandmed
+        >> lae_muudatused
+        >> tagab_emtak
+        >> dbt_stg
+        >> tagab_rahvastik
+        >> dbt_intermediate
+        >> dbt_marts
+        >> dbt_test
+    )
 
 
 ariregister_paevane()

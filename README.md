@@ -134,9 +134,17 @@ docker compose -f _compose.yml up -d --build
 
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
-| `andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging, `dbt seed`, dimensioonivaated |
-| `ariregister_paevane` | iga päev 03:00 | Äriregistri üldandmed + muudatused → dbt |
-| `rahvastik_kuine` | iga kuu 1. kuupäev 04:00 | Statistikaameti rahvastik → dbt |
+| `andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging, `dbt seed`, `dbt deps`, dimensioonivaated |
+| `ariregister_paevane` | iga päev 03:00 | Äriregistri andmed → dbt staging → intermediate → marts → test |
+| `rahvastik_kuine` | iga kuu 1. kuupäev 04:00 | Rahvastik → dbt staging → intermediate → marts → test |
+
+**dbt muudatused ilma Airflow muutmata:** `./dbt_project` on volume-mountitud Airflow konteinerisse. Mudelite valik toimub [`selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml) kaudu (`staging_rik`, `layer_intermediate`, `layer_marts`). Uue `.sql` faili lisamisel `models/marts/` alla piisab DAG-i uuesti triggerdamisest.
+
+Arenduses saad dbt-d käsitsi testida pipeline konteineris:
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
+```
 
 Pärast esimest `docker compose up`:
 
