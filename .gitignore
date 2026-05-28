@@ -23,6 +23,11 @@ build/
 htmlcov/
 .ipynb_checkpoints/
 
+# --- Airflow (runtime dirs) ---
+airflow/config/
+airflow/plugins/
+airflow/logs/
+
 # --- dbt ---
 target/
 dbt_packages/
