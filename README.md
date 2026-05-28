@@ -90,7 +90,100 @@ Kui sul oli sama projekt vanema skeemiga juba käivitatud, kustuta enne vana and
 docker compose down -v
 docker compose up -d --build
 ```
-# meie projektis: Käivita skriptid:
+
+## Airflow orkestreerimine
+
+Airflow on kaasatud [`compose.yml`](compose.yml) failis (PostgreSQL, `pipeline`, Superset ja Airflow ühes stackis). Varasem versioon ilma Airflow'ta on [`_compose.yml`](_compose.yml).
+
+### Eeldused
+
+- `.env` fail on loodud (`cp .env.example .env`) ja sisaldab muu hulgas `AIRFLOW_*` ja `SUPERSET_*` muutujaid.
+- Docker Desktop on käivitatud.
+- Port **8080** (Airflow UI) ja **8088** (Superset) on vabad.
+
+### Käivita kogu stack
+
+Projekti kaustas:
+
+```bash
+docker compose up -d --build
+```
+
+Kontrolli olekut:
+
+```bash
+docker compose ps
+```
+
+Esimene käivitus võtab mõne minuti (Airflow `airflow-init` migratsioon ja pakettide paigaldus).
+
+### Käivita ilma Airflow'ta
+
+Käsitsi ETL ja Superset ilma orkestreerijata (kasuta varukoopiat):
+
+```bash
+docker compose -f _compose.yml up -d --build
+```
+
+### Airflow UI
+
+- Aadress: [http://localhost:8081](http://localhost:8081)
+- Vaikimisi kasutaja: `airflow` / `airflow` (muutujad `_AIRFLOW_WWW_USER_*` `.env` failis)
+
+### DAG-id ja esmane käivitus
+
+| DAG | Ajakava | Mida teeb |
+|---|---|---|
+| `andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging, `dbt seed`, `dbt deps`, dimensioonivaated |
+| `ariregister_paevane` | iga päev 03:00 | Äriregistri andmed → dbt staging → intermediate → marts → test |
+| `rahvastik_kuine` | iga kuu 1. kuupäev 04:00 | Rahvastik → dbt staging → intermediate → marts → test |
+
+**dbt muudatused ilma Airflow muutmata:** `./dbt_project` on volume-mountitud Airflow konteinerisse. Mudelite valik toimub [`selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml) kaudu (`staging_rik`, `layer_intermediate`, `layer_marts`). Uue `.sql` faili lisamisel `models/marts/` alla piisab DAG-i uuesti triggerdamisest.
+
+Arenduses saad dbt-d käsitsi testida pipeline konteineris:
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
+```
+
+Pärast esimest `docker compose up`:
+
+1. Ava Airflow UI, **unpause** vajalikud DAG-id.
+2. **Trigger** `andmestiku_esmane_taitmine` (üks kord pärast kloonimist).
+3. **Trigger** `rahvastik_kuine` (rahvastikuandmed marts-tabelite jaoks).
+4. **Trigger** `ariregister_paevane` (või oota igapäevast ajakava).
+
+DAG-id on vaikimisi pausil (`DAGS_ARE_PAUSED_AT_CREATION=true`).
+
+### Logid ja peatamine
+
+Airflow scheduleri logid:
+
+```bash
+docker compose logs -f airflow-scheduler
+```
+
+Peata ainult Airflow teenused (db, pipeline ja Superset jäävad tööle):
+
+```bash
+docker compose stop airflow-apiserver airflow-scheduler airflow-dag-processor airflow-db
+```
+
+Peata kõik teenused:
+
+```bash
+docker compose down
+```
+
+Kustuta andmed (PostgreSQL + Airflow metaandmed):
+
+```bash
+docker compose down -v
+```
+
+Windows Git Bash-is kasuta `MSYS_NO_PATHCONV=1` eesliidet, kui `docker exec` teekonda moonutab.
+
+# meie projektis: Käivita skriptid (pipeline konteiner — käsitsi arendus):
 
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/01_load_statistikaamet.py
@@ -110,7 +203,12 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
 ```
-dbt käivitamiseks
+
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/04_load_geo.py
+```
+
+dbt käivitamiseks - seda oli vaja enne seedi
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
 ```
@@ -122,8 +220,27 @@ MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed && dbt run"
 ```
+# kui muuta seed faili sisu, siis uuendada seed põhjalikult:
+```bash
+MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed --full-refresh"
+```
 
 
+# Superset Ui on aadressil: http://localhost:8088 ja sinna saab logida nagu env failis kirjas (a-n, a-n)
+
+
+# Superset, andmeühenduse loomine
+Mine Settings → Database Connections → + Database
+Vali andmebaasi tüüp: PostgreSQL
+Täida ühenduse andmed:
+Host: db
+Port: 5432
+Database name: väärtus .env-st (POSTGRES_DB)
+Username / Password: väärtused .env-st (POSTGRES_USER / POSTGRES_PASSWORD)
+Klõpsa Connect, peaks näitama „Database connected"
+Vajuta Finish
+
+# Supersetiga töö: Mine ülevalt SQL/SQLLab
 
 Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
 
@@ -226,7 +343,9 @@ Testide tulemused salvestatakse tabelisse `quality.test_results` ja on näha ka 
 
 | Fail või kaust | Roll |
 |---|---|
-| `compose.yml` | Käivitab PostgreSQL-i, töövoo konteineri, scheduleri ja Streamliti näidikulaua. |
+| `compose.yml` | Käivitab PostgreSQL-i, `pipeline`, Superseti ja Airflow 3 stacki. |
+| `_compose.yml` | Varukoopia: sama stack ilma Airflow'ta. |
+| `airflow/dags/` | Airflow DAG-id (`andmestiku_esmane_taitmine`, `ariregister_paevane`, `rahvastik_kuine`). |
 | `.env.example` | Näitab, milliseid keskkonnamuutujaid projekt vajab. |
 | `init/01_create_objects.sql` | Loob andmebaasi skeemid ja tabelid. |
 | `scripts/00_seed_dimensions.sql` | Täidab staatilise asukohadimensiooni. |

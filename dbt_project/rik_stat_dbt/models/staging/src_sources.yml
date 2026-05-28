@@ -8,3 +8,5 @@ sources:
       - name: ariregister_uldandmed  # <-- Kontrolli, et siin on u-ga
       - name: emtak_2025
       - name: emtak_2008_2025
+      - name: maakond_geo
+      - name: nuts3_geo

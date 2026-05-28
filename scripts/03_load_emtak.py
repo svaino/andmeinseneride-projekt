@@ -1,81 +1,68 @@
-import pandas as pd
-from sqlalchemy import create_engine
 import os
 from datetime import datetime, timezone
 
-# see rida on lisatud view jaoks:
-from sqlalchemy import create_engine, text
+import pandas as pd
+from sqlalchemy import BigInteger, String, TIMESTAMP, create_engine, text
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.getenv("DATA_DIR", os.path.join(os.path.dirname(script_dir), "data"))
 
 engine = create_engine(
     f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
     f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('POSTGRES_DB')}"
 )
 
-# EMTAK2025 failist import
 
-df1 = pd.read_csv('/app/data/EMTAK_2025.csv', sep=';', quotechar='"', engine='python')
-# Lisaveerud id ja created_at jaoks
-df1.insert(0, 'id', range(1, len(df1) + 1))
-df1['created_at'] = datetime.now(timezone.utc)
-
-# Muudan veergude pealkirjad viisakaks
-df1.columns = df1.columns.str.lower().str.replace(' ', '_').str.replace('?', '', regex=False)
-
-# Lisan view kustutamise siia, sest pandas ei saa tabelit kustutada
-with engine.connect() as conn:
-    conn.execute(text("DROP VIEW IF EXISTS staging.emtak_2025_juur CASCADE"))
-    conn.commit()
+def prepare_emtak_reload(conn):
+    """Eemalda dbt vaated ja staging tabelid enne uuesti laadimist."""
+    conn.execute(text("CREATE SCHEMA IF NOT EXISTS staging"))
+    for view in (
+        "staging.emtak_2025_juur",
+        "intermediate.int_dim_emtak",
+    ):
+        conn.execute(text(f"DROP VIEW IF EXISTS {view} CASCADE"))
+    for table in ("staging.emtak_2025", "staging.emtak_2008_2025"):
+        conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
 
 
-df1.to_sql('emtak_2025', engine, schema='staging', if_exists='replace', index=False)
+with engine.begin() as conn:
+    prepare_emtak_reload(conn)
+
+df1 = pd.read_csv(
+    os.path.join(data_dir, "EMTAK_2025.csv"),
+    sep=";",
+    quotechar='"',
+    engine="python",
+)
+df1.insert(0, "id", range(1, len(df1) + 1))
+df1["created_at"] = datetime.now(timezone.utc)
+df1.columns = df1.columns.str.lower().str.replace(" ", "_").str.replace("?", "", regex=False)
+
+df1.to_sql("emtak_2025", engine, schema="staging", if_exists="append", index=False)
 print(f"✅ esimene_tabel laetud: {len(df1)} rida")
 
-# Teine, üleminek 2008 --> 2025 CSV
-df2 = pd.read_csv('/app/data/EMTAK_uleminekutabel_2008_EMTAK_2025.csv', 
-                  sep=';', 
-                  quotechar='"', 
-                  engine='python',
-                  dtype=str)
+df2 = pd.read_csv(
+    os.path.join(data_dir, "EMTAK_uleminekutabel_2008_EMTAK_2025.csv"),
+    sep=";",
+    quotechar='"',
+    engine="python",
+    dtype=str,
+)
+df2.columns = df2.columns.str.lower().str.replace(" ", "_").str.replace("?", "", regex=False)
+df2.insert(0, "id", range(1, len(df2) + 1))
+df2["created_at"] = datetime.now(timezone.utc)
 
-# 1. Esmalt nimeta veerud ümber
-df2.columns = df2.columns.str.lower().str.replace(' ', '_').str.replace('?', '', regex=False)
-
-# 2. Lisa id ja created_at
-df2.insert(0, 'id', range(1, len(df2) + 1))
-df2['created_at'] = datetime.now(timezone.utc)
-
-# 3. Salvesta
-from sqlalchemy import String, BigInteger, TIMESTAMP
-df2.to_sql('emtak_2008_2025', engine, schema='staging', if_exists='replace', index=False,
-           dtype={
-               'id': BigInteger(),
-               'kood_emtak_2008': String(),
-               'kood_emtak_2025': String(),
-               'created_at': TIMESTAMP(timezone=True)
-           })
+df2.to_sql(
+    "emtak_2008_2025",
+    engine,
+    schema="staging",
+    if_exists="append",
+    index=False,
+    dtype={
+        "id": BigInteger(),
+        "kood_emtak_2008": String(),
+        "kood_emtak_2025": String(),
+        "created_at": TIMESTAMP(timezone=True),
+    },
+)
 print(f"✅ teine_tabel laetud: {len(df2)} rida")
-
-
-# Tekitan view (ajutine?), millest saab võtta alamkoodidele ülimad tegevusala tasemed
-with engine.connect() as conn:
-    conn.execute(text("""
-        CREATE OR REPLACE VIEW staging.emtak_2025_juur AS
-        WITH RECURSIVE hierarhia AS (
-            SELECT kood, vanem, kood AS juur
-            FROM staging.emtak_2025
-            WHERE vanem IS NULL
-
-            UNION ALL
-
-            SELECT e.kood, e.vanem, h.juur
-            FROM staging.emtak_2025 e
-            JOIN hierarhia h ON e.vanem = h.kood
-        )
-        SELECT 
-            h.kood, 
-            h.juur AS kõrgeim_vanem,
-            e.tegevusala_tekst AS kõrgeim_vanem_nimi
-        FROM hierarhia h
-        JOIN staging.emtak_2025 e ON e.kood = h.juur;
-    """))
-    conn.commit()

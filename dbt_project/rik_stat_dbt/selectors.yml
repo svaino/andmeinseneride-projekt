@@ -1,0 +1,33 @@
+selectors:
+  - name: staging_rik
+    definition:
+      union:
+        - intersection:
+            - method: path
+              value: models/staging
+            - exclude:
+                - method: fqn
+                  value: stg_stat_rahvastik
+
+  - name: staging_stat
+    definition:
+      method: fqn
+      value: stg_stat_rahvastik
+
+  - name: layer_intermediate
+    definition:
+      method: path
+      value: models/intermediate
+
+  - name: layer_marts
+    definition:
+      method: path
+      value: models/marts
+
+  - name: bootstrap_dims
+    definition:
+      union:
+        - method: fqn
+          value: int_dim_emtak
+        - method: fqn
+          value: int_dim_maakonnad
