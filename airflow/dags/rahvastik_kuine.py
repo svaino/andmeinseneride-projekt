@@ -5,7 +5,7 @@ from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
 DBT_DIR = "/opt/airflow/dbt_project/rik_stat_dbt"
-DBT = f"dbt --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
+DBT = f"cd {DBT_DIR} && dbt"
 
 
 @dag(

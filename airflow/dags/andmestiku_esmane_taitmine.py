@@ -5,7 +5,7 @@ from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
 DBT_DIR = "/opt/airflow/dbt_project/rik_stat_dbt"
-DBT = f"dbt --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
+DBT = f"cd {DBT_DIR} && dbt"
 
 
 @dag(
@@ -17,8 +17,9 @@ DBT = f"dbt --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
     doc_md="""
     Ühekordne (või harv) käivitus pärast repo kloonimist või kui staatilised failid muutuvad.
 
-    Laadib EMTAK CSV-d stagingusse ja täidab dbt seemned (nt `dim_maakonnad`).
-    Pärast seda käivita `ariregister_paevane` ja `rahvastik_kuine`.
+    Laadib EMTAK CSV-d stagingusse, täidab dbt seemned (nt `dim_maakonnad`) ja
+    ehitab dimensioonivaated. `stg_ariregister_*` mudelid käivituvad
+    `ariregister_paevane` DAG-is pärast üldandmete laadimist.
     """,
     default_args={
         "retries": 2,
@@ -38,11 +39,7 @@ def andmestiku_esmane_taitmine():
 
     dbt_run_dims = BashOperator(
         task_id="dbt_run_dimensions",
-        bash_command=(
-            f"{DBT} run --select "
-            "int_dim_emtak int_dim_maakonnad "
-            "stg_ariregister_yldandmed stg_ariregister_viimased_6a"
-        ),
+        bash_command=f"{DBT} run --select int_dim_emtak int_dim_maakonnad",
     )
 
     lae_emtak >> dbt_seed >> dbt_run_dims
