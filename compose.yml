@@ -1,11 +1,54 @@
-# compose.yml.example — Projekti Docker Compose mall
+# PostgreSQL + pipeline + Superset + Airflow 3.1.8 (LocalExecutor)
 #
-# See fail näitab põhistruktuuri. Kopeeri see compose.yml-iks ja kohanda.
-# Erinevad näidisprojektid näitavad konkreetseid stacke (Airflow+dbt, Streamlit jne).
-#
-# Käivitamine pärast kohandamist:
+# Käivitamine:
 #   cp .env.example .env
 #   docker compose up -d --build
+#
+# Varasem stack ilma Airflow'ta: _compose.yml
+
+x-airflow-common:
+  &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.8}
+  env_file:
+    - ${ENV_FILE_PATH:-.env}
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_USER:-airflow}:${AIRFLOW_PASSWORD:-airflow}@airflow-db:5432/${AIRFLOW_DB:-airflow}
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
+    AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW_CONN_ANALYTICS_DB: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    DB_HOST: db
+    DB_PORT: "5432"
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    POSTGRES_DB: ${POSTGRES_DB}
+    ARIREGISTER_USER: ${ARIREGISTER_USER}
+    ARIREGISTER_PASSWORD: ${ARIREGISTER_PASSWORD}
+    STAT_API_URL: ${STAT_API_URL}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-dbt-postgres==1.10.0 requests python-dotenv psycopg2-binary beautifulsoup4 pandas sqlalchemy}
+    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/config:/opt/airflow/config
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./dbt_project:/opt/airflow/dbt_project
+    - ./scripts:/opt/airflow/scripts
+    - ./data:/opt/airflow/data
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    airflow-db:
+      condition: service_healthy
+    db:
+      condition: service_healthy
 
 services:
 
@@ -29,11 +72,6 @@ services:
       retries: 5
       start_period: 5s
 
-  # --- Töövoo konteiner (nt Python ETL skript) ---
-  # Kasuta seda, kui sul on lihtne Python-põhine töövoog ilma Airflow'ta.
-  # Airflow-põhise stacki puhul asenda selle sektsioon airflow/* teenustega
-  # (vaata naidisprojekt-ilmaandmed-dbt-ja-airflow/compose.yml).
-  #
   pipeline:
     build:
       context: .
@@ -117,33 +155,110 @@ services:
     command: ["/app/docker/entrypoints/run-server.sh"]
     restart: always
 
+  airflow-db:
+    image: postgres:16
+    container_name: andmeinseneeria-airflow-db
+    environment:
+      POSTGRES_USER: ${AIRFLOW_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_PASSWORD:-airflow}
+      POSTGRES_DB: ${AIRFLOW_DB:-airflow}
+    volumes:
+      - airflow-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${AIRFLOW_USER:-airflow}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
 
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    container_name: andmeinseneeria-airflow-api
+    ports:
+      - "${AIRFLOW_PORT_HOST:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
 
-  # --- Näidikulaud ---
-  # Streamliti põhine näide. Superset-põhise stacki puhul vaata
-  # naidisprojekt-ilmaandmed-dbt-ja-airflow/compose.yml.
-  #
-  # dashboard:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.app
-  #   container_name: [PROJEKTI-NIMI]-dashboard
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     DB_HOST: db
-  #     DB_PORT: "5432"
-  #     DB_USER: ${POSTGRES_USER}
-  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
-  #     DB_NAME: ${POSTGRES_DB}
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   ports:
-  #     - "${DASHBOARD_PORT_HOST:-8501}:8501"
-  #   command: ["streamlit", "run", "dashboard/app.py", "--server.address=0.0.0.0"]
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    container_name: andmeinseneeria-airflow-scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    container_name: andmeinseneeria-airflow-dagproc
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: andmeinseneeria-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          echo
+          echo -e "\033[1;33mWARNING: AIRFLOW_UID not set!\e[0m"
+          echo "If you are on Linux, set AIRFLOW_UID environment variable."
+          echo
+          export AIRFLOW_UID=$$(id -u)
+        fi
+        echo
+        echo "Creating missing opt dirs if missing:"
+        mkdir -v -p /opt/airflow/{logs,dags,plugins,config}
+        echo
+        echo "Airflow version:"
+        /entrypoint airflow version
+        echo
+        echo "Running airflow config list to create default config file if missing."
+        /entrypoint airflow config list >/dev/null
+        echo
+        echo "Change ownership of files in /opt/airflow to ${AIRFLOW_UID}:0"
+        chown -R "${AIRFLOW_UID}:0" /opt/airflow/
+        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,plugins,config}
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
+    user: "0:0"
 
 volumes:
   pgdata:
   superset-db-volume:
   superset-home:
+  airflow-db-volume:

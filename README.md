@@ -93,7 +93,7 @@ docker compose up -d --build
 
 ## Airflow orkestreerimine
 
-Airflow stack on eraldi failis [`airflow_compose.yml`](airflow_compose.yml). Põhi-teenused (PostgreSQL, `pipeline`, Superset) jäävad [`compose.yml`](compose.yml) alla — seda faili ei muudeta.
+Airflow on kaasatud [`compose.yml`](compose.yml) failis (PostgreSQL, `pipeline`, Superset ja Airflow ühes stackis). Varasem versioon ilma Airflow'ta on [`_compose.yml`](_compose.yml).
 
 ### Eeldused
 
@@ -101,33 +101,33 @@ Airflow stack on eraldi failis [`airflow_compose.yml`](airflow_compose.yml). Põ
 - Docker Desktop on käivitatud.
 - Port **8080** (Airflow UI) ja **8088** (Superset) on vabad.
 
-### Käivita kogu stack (soovitatav Airflow tööks)
+### Käivita kogu stack
 
 Projekti kaustas:
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml up -d --build
+docker compose up -d --build
 ```
 
 Kontrolli olekut:
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml ps
+docker compose ps
 ```
 
 Esimene käivitus võtab mõne minuti (Airflow `airflow-init` migratsioon ja pakettide paigaldus).
 
 ### Käivita ilma Airflow'ta
 
-Käsitsi ETL ja Superset ilma orkestreerijata:
+Käsitsi ETL ja Superset ilma orkestreerijata (kasuta varukoopiat):
 
 ```bash
-docker compose up -d --build
+docker compose -f _compose.yml up -d --build
 ```
 
 ### Airflow UI
 
-- Aadress: [http://localhost:8080](http://localhost:8080)
+- Aadress: [http://localhost:8081](http://localhost:8081)
 - Vaikimisi kasutaja: `airflow` / `airflow` (muutujad `_AIRFLOW_WWW_USER_*` `.env` failis)
 
 ### DAG-id ja esmane käivitus
@@ -138,7 +138,7 @@ docker compose up -d --build
 | `ariregister_paevane` | iga päev 03:00 | Äriregistri üldandmed + muudatused → dbt |
 | `rahvastik_kuine` | iga kuu 1. kuupäev 04:00 | Statistikaameti rahvastik → dbt |
 
-Pärast esimest `docker compose ... up`:
+Pärast esimest `docker compose up`:
 
 1. Ava Airflow UI, **unpause** vajalikud DAG-id.
 2. **Trigger** `andmestiku_esmane_taitmine` (üks kord pärast kloonimist).
@@ -152,26 +152,25 @@ DAG-id on vaikimisi pausil (`DAGS_ARE_PAUSED_AT_CREATION=true`).
 Airflow scheduleri logid:
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml logs -f airflow-scheduler
+docker compose logs -f airflow-scheduler
 ```
 
 Peata ainult Airflow teenused (db, pipeline ja Superset jäävad tööle):
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml stop \
-  airflow-apiserver airflow-scheduler airflow-dag-processor airflow-db
+docker compose stop airflow-apiserver airflow-scheduler airflow-dag-processor airflow-db
 ```
 
 Peata kõik teenused:
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml down
+docker compose down
 ```
 
 Kustuta andmed (PostgreSQL + Airflow metaandmed):
 
 ```bash
-docker compose -f compose.yml -f airflow_compose.yml down -v
+docker compose down -v
 ```
 
 Windows Git Bash-is kasuta `MSYS_NO_PATHCONV=1` eesliidet, kui `docker exec` teekonda moonutab.
@@ -314,8 +313,8 @@ Testide tulemused salvestatakse tabelisse `quality.test_results` ja on näha ka 
 
 | Fail või kaust | Roll |
 |---|---|
-| `compose.yml` | Käivitab PostgreSQL-i, `pipeline` konteineri ja Superseti. |
-| `airflow_compose.yml` | Airflow 3 stack; käivita koos `compose.yml`-ga (vt [Airflow orkestreerimine](#airflow-orkestreerimine)). |
+| `compose.yml` | Käivitab PostgreSQL-i, `pipeline`, Superseti ja Airflow 3 stacki. |
+| `_compose.yml` | Varukoopia: sama stack ilma Airflow'ta. |
 | `airflow/dags/` | Airflow DAG-id (`andmestiku_esmane_taitmine`, `ariregister_paevane`, `rahvastik_kuine`). |
 | `.env.example` | Näitab, milliseid keskkonnamuutujaid projekt vajab. |
 | `init/01_create_objects.sql` | Loob andmebaasi skeemid ja tabelid. |

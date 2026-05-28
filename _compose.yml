@@ -1,7 +1,10 @@
-# Airflow stack — run together with the main project:
-#   docker compose -f compose.yml -f airflow_compose.yml up -d --build
+# PostgreSQL + pipeline + Superset + Airflow 3.1.8 (LocalExecutor)
 #
-# Põhineb Apache Airflow 3.1.8 ametlikul compose.yml failil (LocalExecutor).
+# Käivitamine:
+#   cp .env.example .env
+#   docker compose up -d --build
+#
+# Varasem stack ilma Airflow'ta: _compose.yml
 
 x-airflow-common:
   &airflow-common
@@ -48,6 +51,110 @@ x-airflow-common:
       condition: service_healthy
 
 services:
+
+  db:
+    image: pgduckdb/pgduckdb:18-v1.1.1
+    container_name: andmeinseneeria-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${DB_PORT_HOST:-55432}:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-praktikum}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: andmeinseneeria-pipeline
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      DBT_PROFILES_DIR: /app/dbt_project/rik_stat_dbt
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+      - ./dbt_project:/app/dbt_project
+    working_dir: /app
+    tty: true
+
+  superset-db:
+    image: postgres:16
+    container_name: andmeinseneeria-superset-db
+    environment:
+      POSTGRES_USER: ${SUPERSET_DB_USER}
+      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD}
+      POSTGRES_DB: ${SUPERSET_DB_NAME}
+    volumes:
+      - superset-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPERSET_DB_USER} -d ${SUPERSET_DB_NAME}"]
+      interval: 5s
+      retries: 10
+    restart: always
+
+  superset-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    container_name: andmeinseneeria-superset-init
+    depends_on:
+      superset-db:
+        condition: service_healthy
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - superset-home:/app/superset_home
+    environment:
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
+      SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
+      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+    command:
+      - /bin/sh
+      - -c
+      - "superset db upgrade && superset fab create-admin --username $${ADMIN_USERNAME} --firstname Admin --lastname User --email $${ADMIN_EMAIL} --password $${ADMIN_PASSWORD} && superset init"
+    restart: "no"
+
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    container_name: andmeinseneeria-superset
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    ports:
+      - "${SUPERSET_PORT_HOST:-8088}:8088"
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - superset-home:/app/superset_home
+    environment:
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
+      SECRET_KEY: ${SUPERSET_SECRET_KEY}
+    command: ["/app/docker/entrypoints/run-server.sh"]
+    restart: always
+
   airflow-db:
     image: postgres:16
     container_name: andmeinseneeria-airflow-db
@@ -69,7 +176,7 @@ services:
     command: api-server
     container_name: andmeinseneeria-airflow-api
     ports:
-      - "${AIRFLOW_PORT_HOST:-8080}:8080"
+      - "${AIRFLOW_PORT_HOST:-8081}:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
       interval: 30s
@@ -151,4 +258,7 @@ services:
     user: "0:0"
 
 volumes:
+  pgdata:
+  superset-db-volume:
+  superset-home:
   airflow-db-volume:
