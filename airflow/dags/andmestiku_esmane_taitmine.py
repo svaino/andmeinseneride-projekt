@@ -44,7 +44,7 @@ def andmestiku_esmane_taitmine():
         bash_command=f"{DBT} run --selector bootstrap_dims",
     )
 
-    lae_emtak >> dbt_seed >> dbt_deps >> dbt_run_dims
+    lae_emtak >> dbt_deps >> dbt_seed >> dbt_run_dims
 
 
 andmestiku_esmane_taitmine()
