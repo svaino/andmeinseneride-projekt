@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+dbt_project/rik_stat_dbt/dbt_packages/
+dbt_project/rik_stat_dbt/target/
+
 # --- Python ---
 __pycache__/
 *.py[cod]
