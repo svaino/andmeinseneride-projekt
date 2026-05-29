@@ -29,14 +29,14 @@ def andmestiku_esmane_taitmine():
         bash_command="python /opt/airflow/scripts/03_load_emtak.py",
     )
 
+    dbt_deps = BashOperator(
+            task_id="dbt_deps",
+            bash_command=f"{DBT} deps",
+        )
+    
     dbt_seed = BashOperator(
         task_id="dbt_seed",
         bash_command=f"{DBT} seed",
-    )
-
-    dbt_deps = BashOperator(
-        task_id="dbt_deps",
-        bash_command=f"{DBT} deps",
     )
 
     dbt_run_dims = BashOperator(

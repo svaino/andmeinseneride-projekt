@@ -30,11 +30,6 @@ def ariregister_paevane():
         bash_command="python /opt/airflow/scripts/02_01_load_ariregister_yldandmed.py",
     )
 
-    lae_muudatused = BashOperator(
-        task_id="lae_ariregister_muudatused",
-        bash_command="python /opt/airflow/scripts/02_02_load_ariregister_muudatused.py",
-    )
-
     tagab_emtak = BashOperator(
         task_id="tagab_emtak_tabelid",
         bash_command=f"""
@@ -152,7 +147,6 @@ PY
 
     (
         lae_yldandmed
-        >> lae_muudatused
         >> tagab_emtak
         >> dbt_stg
         >> tagab_rahvastik
