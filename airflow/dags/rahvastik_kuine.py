@@ -12,6 +12,7 @@ from include.dbt_config import DBT
     schedule="0 4 1 * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
+    max_active_runs=1,
     tags=["rahvastik", "monthly"],
     default_args={
         "retries": 3,

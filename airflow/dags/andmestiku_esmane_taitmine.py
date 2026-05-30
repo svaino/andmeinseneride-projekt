@@ -12,6 +12,7 @@ from include.dbt_config import DBT
     schedule=None,
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
+    max_active_runs=1,
     tags=["bootstrap", "setup"],
     doc_md="""
     Ühekordne (või harv) käivitus pärast repo kloonimist või kui staatilised failid muutuvad.

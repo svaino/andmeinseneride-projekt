@@ -12,6 +12,7 @@ from include.dbt_config import DBT
     schedule="0 3 * * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
+    max_active_runs=1,
     tags=["ariregister", "daily"],
     doc_md="""
     Igapäevane Äriregistri voog.
