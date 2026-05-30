@@ -40,6 +40,7 @@ x-airflow-common:
     - ./airflow/config:/opt/airflow/config
     - ./airflow/plugins:/opt/airflow/plugins
     - ./dbt_project:/opt/airflow/dbt_project
+    - dbt-target:/opt/airflow/dbt_project/rik_stat_dbt/target
     - ./scripts:/opt/airflow/scripts
     - ./data:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
@@ -132,7 +133,7 @@ services:
     command:
       - /bin/sh
       - -c
-      - "superset db upgrade && superset fab create-admin --username $${ADMIN_USERNAME} --firstname Admin --lastname User --email $${ADMIN_EMAIL} --password $${ADMIN_PASSWORD} && superset init"
+      - "superset db upgrade && superset fab create-admin --username $${ADMIN_USERNAME} --firstname Admin --lastname User --email $${ADMIN_EMAIL} --password $${ADMIN_PASSWORD} && superset init && superset import-dashboards -p $(ls /app/superset_home/dashboards/*.zip | tail -1) -u admin"
     restart: "no"
 
   superset:
@@ -262,3 +263,5 @@ volumes:
   superset-db-volume:
   superset-home:
   airflow-db-volume:
+  airflow-logs:
+  dbt-target:
