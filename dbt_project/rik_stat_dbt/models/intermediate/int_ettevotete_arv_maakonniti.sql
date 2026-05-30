@@ -1,5 +1,5 @@
 WITH yldandmed AS (
-    SELECT * FROM {{ ref('stg_ariregister_yldandmed') }}
+    SELECT * FROM {{ ref('int_ariregister_yldandmed') }}
 ),
 
 agregeeritud AS (

@@ -1,6 +1,7 @@
 -- Ettevõtlik elanikkond: 20-74 aastased
 -- 0-19: valdavalt mitteaktiivsed ettevõtjad
 -- 75+: eakad, väljunud aktiivsest majanduselust
+-- Ei jäta siia vanusegruppe, kuna pole teada ettevõtte asutanute vanuseid
 -- Ettevõtlikkust ei analüüsi soo ega rahvuse osakaalu järgi
 
 SELECT

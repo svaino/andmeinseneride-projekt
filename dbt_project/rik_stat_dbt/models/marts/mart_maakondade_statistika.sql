@@ -2,7 +2,7 @@ WITH rahvastik AS (
     SELECT 
         maakond,
         SUM(elanike_arv) AS elanike_arv
-    FROM {{ ref('stg_stat_rahvastik') }}
+    FROM {{ ref('int_stat_rahvastik') }}
     WHERE aasta = 2024
     GROUP BY 1
 ),
