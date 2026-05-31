@@ -5,6 +5,19 @@ sources:
     schema: staging
     tables:
       - name: stat_rahvastik
+        columns: 
+          - name: elanike_arv
+            description: "Maakonna elanike arv"
+            tests: 
+              - not_null #Test 1: kontrollib, et väli ei oleks tühi
+              - dbt_utils.expression_is_true:
+                  expression: ">=0" #Test 2: kontrollib, et elanike arv oleks positiivne
       - name: ariregister_uldandmed  # <-- Kontrolli, et siin on u-ga
+        columns: 
+          - name: reg_kood
+            description: "Ettevõtte registrikood"
+            tests:
+              - unique #Test 3: kontrollib, et registrikood oleks unikaalne
+              - not_null #Test 4: kontrollib, et registrikood oleks olemas
       - name: emtak_2025
       - name: emtak_2008_2025

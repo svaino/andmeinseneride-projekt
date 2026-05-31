@@ -1,28 +1,6 @@
 version: 2
 
 models:
-  - name: mart_elanikke_ettevotte_kohta_20250101
-    description: "Maakonna taseme mõõdik, mis ühendab 2025. aasta rahvastikuandmed ja aktiivsete ettevõtete arvu. Mudel näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta."
-    columns:
-      - name: maakond
-        description: "Maakonna nimi."
-        tests:
-          - not_null
-          - unique
-
-      - name: elanike_arv
-        description: "Maakonna elanike koguarv 2025. aastal."
-        tests:
-          - not_null
-
-      - name: aktiivsete_ettevotete_arv
-        description: "Aktiivsete ehk registrisse kantud ettevõtete arv maakonnas."
-        tests:
-          - not_null
-
-      - name: elanikke_yhe_ettevotte_kohta
-        description: "Näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta. Väiksem väärtus tähendab suuremat ettevõtete tihedust."
-
   - name: mart_ettevotlikus_6a
     description: "Maakonna, aasta ja EMTAK jaotise taseme ettevõtlikkuse mõõdik viimase kuue aasta kohta. Mudel võrdleb viimase kuue aasta jooksul asutatud äriettevõtete arvu 20–74-aastase elanikkonnaga."
     columns:

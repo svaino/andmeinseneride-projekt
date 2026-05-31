@@ -270,6 +270,17 @@ Scheduleri logisid saad vaadata nii:
 docker compose logs -f scheduler
 ```
 
+# Dbt käsud veebiliidese jaoks
+
+Kui konteinerid on püsti, siis veebiliidese jaoks käivita järgmised käsud:
+1. käsk (dokumentatsiooni failide uuendamiseks, andmete kogumine mudelitest):
+docker compose run --rm dbt dbt docs generate
+2. käsk (paneb käima kohaliku veebiserveri):
+docker compose run --rm -p 18080:8080 dbt dbt docs serve --port 8080 --host 0.0.0.0
+
+Ja lõpetuseks veebiliides: http://localhost:18080
+
+
 ## Korduskäivitused ja vanad andmed
 
 Iga laadimine saab uue `run_id`. Vanad laadimised jäävad alles tabelitesse `staging.pipeline_runs` ja `staging.weather_hourly_raw`, kuni käivitad käsu `reset` või kustutad andmebaasi mahu käsuga `docker compose down -v`.

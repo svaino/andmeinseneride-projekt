@@ -36,3 +36,9 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+# KVALITEEDIKONTROLLI SEADISTUS:
+# Käsib dbt-l salvestada testide ebaõnnestunud read andmebaasi tabelitesse
+data_tests:
+    +store_failures: true
+    +schema: quality_errors

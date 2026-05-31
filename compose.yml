@@ -34,6 +34,7 @@ x-airflow-common:
     STAT_API_URL: ${STAT_API_URL}
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-dbt-postgres==1.10.0 requests python-dotenv psycopg2-binary beautifulsoup4 pandas sqlalchemy}
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    AIRFLOW__OPERATORS__BASH_COMMAND_PREFIX: "bash -c"
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
@@ -72,6 +73,28 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
+
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+    container_name: praktikum-dbt-03
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      DBT_PROFILES_DIR: /app/dbt_project/rik_stat_dbt
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./dbt_project:/app/dbt_project
+    working_dir: /app/dbt_project/rik_stat_dbt
+    tty: true
 
   pipeline:
     build:
@@ -130,11 +153,10 @@ services:
       ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
       ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
-    command:
-      - /bin/sh
-      - -c
-      - "superset db upgrade && superset fab create-admin --username $${ADMIN_USERNAME} --firstname Admin --lastname User --email $${ADMIN_EMAIL} --password $${ADMIN_PASSWORD} && superset init && superset import-dashboards -p $(ls /app/superset_home/dashboards/*.zip | tail -1) -u admin"
-    restart: "no"
+    command: >
+      sh -c "superset db upgrade && 
+             superset fab create-admin --username ${SUPERSET_ADMIN_USER} --firstname Admin --lastname User --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} && 
+             superset init"
 
   superset:
     build:
