@@ -93,7 +93,7 @@ docker compose up -d --build
 
 ## Airflow orkestreerimine
 
-Airflow on kaasatud [`compose.yml`](compose.yml) failis (PostgreSQL, `pipeline`, Superset ja Airflow ühes stackis). Varasem versioon ilma Airflow'ta on [`_compose.yml`](_compose.yml).
+Airflow on kaasatud [`compose.yml`](compose.yml) failis (PostgreSQL, `pipeline`, Superset ja Airflow ühes stackis).
 
 ### Eeldused
 
@@ -116,14 +116,6 @@ docker compose ps
 ```
 
 Esimene käivitus võtab mõne minuti (Airflow `airflow-init` migratsioon ja pakettide paigaldus).
-
-### Käivita ilma Airflow'ta
-
-Käsitsi ETL ja Superset ilma orkestreerijata (kasuta varukoopiat):
-
-```bash
-docker compose -f _compose.yml up -d --build
-```
 
 ### Airflow UI
 
@@ -355,7 +347,6 @@ Testide tulemused salvestatakse tabelisse `quality.test_results` ja on näha ka 
 | Fail või kaust | Roll |
 |---|---|
 | `compose.yml` | Käivitab PostgreSQL-i, `pipeline`, Superseti ja Airflow 3 stacki. |
-| `_compose.yml` | Varukoopia: sama stack ilma Airflow'ta. |
 | `airflow/dags/` | Airflow DAG-id (`andmestiku_esmane_taitmine`, `ariregister_paevane`, `rahvastik_kuine`). |
 | `.env.example` | Näitab, milliseid keskkonnamuutujaid projekt vajab. |
 | `init/01_create_objects.sql` | Loob andmebaasi skeemid ja tabelid. |
