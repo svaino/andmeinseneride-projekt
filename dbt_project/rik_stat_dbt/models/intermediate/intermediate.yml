@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: int_ariregister_yldandmed
+    description: "Äriregistri üldandmete puhastatud vahemudel. Mudelis on ettevõtted rühmitatud õigusliku vormi alusel ning EMTAK koodid on ühtlustatud EMTAK 2025 jaotise järgi."
+    columns:
+      - name: reg_kood
+        description: "Ettevõtte registrikood."
+        tests:
+          - not_null
+          - unique
+
+      - name: ettevotte_nimi
+        description: "Ettevõtte nimi Äriregistri andmetes."
+        tests:
+          - not_null
+
+      - name: oiguslik_vorm_grupp
+        description: "Õigusliku vormi põhjal loodud üldistatud ettevõtlusvormi grupp."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "1_äriettevõtted"
+                  - "2_FIE"
+                  - "3_Muud_jur_isikud"
+
+      - name: emtak_kood_2025
+        description: "Ettevõtte tegevusala EMTAK kood, ühtlustatud EMTAK 2025 versioonile."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('int_dim_emtak')
+                field: kood
+
+      - name: viimased_6a
+        description: "Tunnus, mis näitab, kas ettevõte on asutatud viimase kuue aasta jooksul. Väärtus 1 tähendab jah, 0 tähendab ei."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+  - name: int_dim_emtak
+    description: "EMTAK 2025 tegevusalade dimensioon. Mudel loob hierarhia, kus igale EMTAK koodile lisatakse tema kõrgeim vanemjaotis ja selle nimetus."
+    columns:
+      - name: kood
+        description: "EMTAK 2025 tegevusala kood."
+        tests:
+          - not_null
+          - unique
+
+      - name: kood_nimi
+        description: "EMTAK koodile vastav tegevusala nimetus."
+        tests:
+          - not_null
+
+      - name: kõrgeim_vanem
+        description: "EMTAK hierarhia kõrgeima taseme vanemjaotise kood."
+        tests:
+          - not_null
+
+      - name: kõrgeim_vanem_nimi
+        description: "EMTAK hierarhia kõrgeima taseme vanemjaotise nimetus."
+        tests:
+          - not_null
+
+  - name: int_dim_maakonnad
+    description: "Maakondade dimensioon Superseti Eesti kaardikihi jaoks. Mudel sisaldab maakonna nime, Superseti kaardikoodile vastavat koodi, regiooni ja kuvamisjärjestust."
+    columns:
+      - name: maakond_id
+        description: "Maakonna tehniline järjekorranumber, mis luuakse kuvamisjärjestuse põhjal."
+        tests:
+          - not_null
+          - unique
+
+      - name: maakond_nimi
+        description: "Maakonna nimi ilma sõnata 'maakond'."
+        tests:
+          - not_null
+          - unique
+
+      - name: iso_kood
+        description: "Superseti Eesti kaardiandmestiku jaoks kasutatav maakonna kood."
+        tests:
+          - not_null
+          - unique
+
+      - name: regioon
+        description: "Maakonna regioon."
+        tests:
+          - not_null
+
+      - name: kuvajarjestus
+        description: "Maakonna kuvamisjärjestus aruannetes ja visualiseeringutes."
+        tests:
+          - not_null
+          - unique
+
+  - name: int_ettevotete_arv_maakonniti_emtak
+    description: "Maakonna, liikuva aasta, EMTAK jaotise ja viimase kuue aasta tunnuse taseme vahemudel. Mudel arvutab äriettevõtete arvu Äriregistri andmete põhjal."
+    columns:
+      - name: liikuv_aasta
+        description: "Liikuva aastaperioodi lõpuaasta, mis on arvutatud ettevõtte asutamise kuupäeva põhjal."
+        tests:
+          - not_null
+
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+        tests:
+          - not_null
+
+      - name: viimased_6a
+        description: "Tunnus, mis näitab, kas ettevõte on asutatud viimase kuue aasta jooksul. Väärtus 1 tähendab jah, 0 tähendab ei."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: aride_arv
+        description: "Äriettevõtete arv vastava maakonna, aasta, EMTAK jaotise ja viimase kuue aasta tunnuse lõikes."
+        tests:
+          - not_null

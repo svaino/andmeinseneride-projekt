@@ -1,0 +1,185 @@
+version: 2
+
+models:
+  - name: mart_elanikke_ettevotte_kohta_20250101
+    description: "Maakonna taseme mõõdik, mis ühendab 2025. aasta rahvastikuandmed ja aktiivsete ettevõtete arvu. Mudel näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta."
+    columns:
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+          - unique
+
+      - name: elanike_arv
+        description: "Maakonna elanike koguarv 2025. aastal."
+        tests:
+          - not_null
+
+      - name: aktiivsete_ettevotete_arv
+        description: "Aktiivsete ehk registrisse kantud ettevõtete arv maakonnas."
+        tests:
+          - not_null
+
+      - name: elanikke_yhe_ettevotte_kohta
+        description: "Näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta. Väiksem väärtus tähendab suuremat ettevõtete tihedust."
+
+  - name: mart_ettevotlikus_6a
+    description: "Maakonna, aasta ja EMTAK jaotise taseme ettevõtlikkuse mõõdik viimase kuue aasta kohta. Mudel võrdleb viimase kuue aasta jooksul asutatud äriettevõtete arvu 20–74-aastase elanikkonnaga."
+    columns:
+      - name: aasta
+        description: "Rahvastikuandmete aasta."
+        tests:
+          - not_null
+
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: ettevotlike_arv
+        description: "20–74-aastaste elanike arv maakonnas ja aastal."
+        tests:
+          - not_null
+
+      - name: ari_ettevotete_arv
+        description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv maakonna, aasta ja EMTAK jaotise lõikes."
+        tests:
+          - not_null
+
+      - name: ettevotteid_1000_ettevotliku_kohta
+        description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv 1000 ettevõtlikus eas elaniku kohta."
+
+      - name: regioon
+        description: "Maakonna regioon."
+        tests:
+          - not_null
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+
+  - name: mart_ettevotlikus_geo
+    description: "Geograafilise visualiseerimise jaoks loodud ettevõtlikkuse mart. Mudel lisab viimase kuue aasta ettevõtlikkuse mõõdikutele maakonna kaardikoodi."
+    columns:
+      - name: aasta
+        description: "Rahvastikuandmete aasta."
+        tests:
+          - not_null
+
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: regioon
+        description: "Maakonna regioon."
+        tests:
+          - not_null
+
+      - name: ettevotlike_arv
+        description: "20–74-aastaste elanike arv maakonnas ja aastal."
+        tests:
+          - not_null
+
+      - name: ari_ettevotete_arv
+        description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv."
+        tests:
+          - not_null
+
+      - name: ettevotteid_1000_ettevotliku_kohta
+        description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv 1000 ettevõtlikus eas elaniku kohta."
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+
+      - name: iso_kood
+        description: "Superseti Eesti kaardikihi jaoks kasutatav maakonna kood."
+        tests:
+          - not_null
+
+  - name: mart_maakonaded_statistika
+    description: "Maakonna taseme statistiline koondtabel, mis ühendab 2024. aasta rahvastikuandmed ja aktiivsete ettevõtete arvu."
+    columns:
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+          - unique
+
+      - name: elanike_arv
+        description: "Maakonna elanike koguarv 2024. aastal."
+        tests:
+          - not_null
+
+      - name: aktiivsete_ettevotete_arv
+        description: "Aktiivsete ehk registrisse kantud ettevõtete arv maakonnas."
+        tests:
+          - not_null
+
+      - name: elanikke_yhe_ettevotte_kohta
+        description: "Näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta. Väiksem väärtus tähendab suuremat ettevõtete tihedust."
+
+  - name: mart_uute_ariettevotete_arv_tegevusalati
+    description: "Uute äriettevõtete arv tegevusala, maakonna ja õigusliku vormi grupi lõikes. Mudel kasutab EMTAK 2025 jaotist ning loendab valitud liikuva aasta ettevõtteid."
+    columns:
+      - name: jur_valdkond
+        description: "Õigusliku vormi põhjal loodud üldistatud ettevõtlusvormi grupp."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "1_äriettevõtted"
+                  - "2_FIE"
+                  - "3_Muud_jur_isikud"
+
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: kõrgeim_vanem
+        description: "EMTAK hierarhia kõrgeima taseme vanemjaotise kood."
+        tests:
+          - not_null
+
+      - name: kõrgeim_vanem_nimi
+        description: "EMTAK hierarhia kõrgeima taseme vanemjaotise nimetus."
+        tests:
+          - not_null
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+        tests:
+          - not_null
+
+      - name: ettevotete_arv
+        description: "Ettevõtete arv vastava õigusliku vormi grupi, maakonna ja EMTAK jaotise lõikes."
+        tests:
+          - not_null
+
+  - name: mart_emtak_portfolio_muutus
+    description: "Maakonna EMTAK portfelli muutuse mart. Mudel võrdleb viimase aasta äriettevõtete jaotust varasemate aastate jaotusega EMTAK jaotise lõikes."
+    columns:
+      - name: maakond
+        description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+        tests:
+          - not_null
+
+      - name: arid_viimane_aasta
+        description: "Äriettevõtete arv jooksval aastal vastava maakonna ja EMTAK jaotise lõikes."
+        tests:
+          - not_null
+
+      - name: arid_enne
+        description: "Äriettevõtete arv varasematel aastatel vastava maakonna ja EMTAK jaotise lõikes."
+
+      - name: osakaal_viimane
+        description: "EMTAK jaotise osakaal maakonna jooksva aasta äriettevõtete koguarvust protsentides."
+
+      - name: osakaal_enne
+        description: "EMTAK jaotise osakaal maakonna varasemate aastate äriettevõtete koguarvust protsentides."

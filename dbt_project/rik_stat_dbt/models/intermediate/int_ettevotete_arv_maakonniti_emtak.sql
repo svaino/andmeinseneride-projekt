@@ -1,7 +1,10 @@
     SELECT  
     r.liikuva_aasta_lopuaasta as liikuv_aasta,
     r. maakond,
-    e. kõrgeim_vanem || '-' || e. kõrgeim_vanem_nimi as EMTAK_jaotis,
+    coalesce(
+    e.kõrgeim_vanem || '-' || e.kõrgeim_vanem_nimi,
+    'Määramata'
+) as emtak_jaotis,
     r.viimased_6a,
     count(reg_kood) as aride_arv
     FROM {{ ref('int_ariregister_yldandmed') }} r

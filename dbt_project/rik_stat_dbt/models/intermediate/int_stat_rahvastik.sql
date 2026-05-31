@@ -7,8 +7,8 @@
 SELECT
     aasta,
     case 
-        when vanusegrupp in ('0-4','5-9','10-14','14-19') then '1_noored_0-19'        
-        when vanusegrupp in ('75-79', '80-84','85-89','90-94','95-99', '100 ja vanemad') then '3_vanurid_80+'
+        when vanusegrupp in ('0-4','5-9','10-14','15-19') then '1_noored_0-19'        
+        when vanusegrupp in ('75-79', '80-84','85-89','90-94','95-99', '100 ja vanemad') then '3_vanurid_75+'
         else '2_ettevotlikud_20-74'
     end as vanuseruhmad,
     REPLACE(maakond, ' maakond', '') as maakond,
