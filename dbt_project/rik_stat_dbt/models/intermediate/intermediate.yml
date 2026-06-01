@@ -20,7 +20,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
+
                 values:
                   - "1_äriettevõtted"
                   - "2_FIE"
@@ -30,17 +30,15 @@ models:
         description: "Ettevõtte tegevusala EMTAK kood, ühtlustatud EMTAK 2025 versioonile."
         tests:
           - relationships:
-              arguments:
-                to: ref('int_dim_emtak')
-                field: kood
+               to: ref('int_dim_emtak')
+               field: kood
 
       - name: viimased_6a
         description: "Tunnus, mis näitab, kas ettevõte on asutatud viimase kuue aasta jooksul. Väärtus 1 tähendab jah, 0 tähendab ei."
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
 
   - name: int_dim_emtak
     description: "EMTAK 2025 tegevusalade dimensioon. Mudel loob hierarhia, kus igale EMTAK koodile lisatakse tema kõrgeim vanemjaotis ja selle nimetus."
@@ -121,8 +119,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
 
       - name: aride_arv
         description: "Äriettevõtete arv vastava maakonna, aasta, EMTAK jaotise ja viimase kuue aasta tunnuse lõikes."

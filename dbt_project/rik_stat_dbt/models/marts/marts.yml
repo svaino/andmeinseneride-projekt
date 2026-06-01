@@ -104,7 +104,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
+
                 values:
                   - "1_äriettevõtted"
                   - "2_FIE"

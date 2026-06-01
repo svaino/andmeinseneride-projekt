@@ -32,7 +32,7 @@ x-airflow-common:
     ARIREGISTER_USER: ${ARIREGISTER_USER}
     ARIREGISTER_PASSWORD: ${ARIREGISTER_PASSWORD}
     STAT_API_URL: ${STAT_API_URL}
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-dbt-postgres==1.10.0 requests python-dotenv psycopg2-binary beautifulsoup4 pandas sqlalchemy}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS}
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     AIRFLOW__OPERATORS__BASH_COMMAND_PREFIX: "bash -c"
   volumes:
@@ -282,6 +282,22 @@ services:
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
+
+ # airflow-worker:
+ #    <<: *airflow-common
+ #    command: task-execution-api-server
+ #    container_name: andmeinseneeria-airflow-worker
+ #    healthcheck:
+ #     test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+ #     interval: 30s
+ #     timeout: 10s
+ #     retries: 5
+ #     start_period: 30s
+ #    restart: always
+ #    depends_on:
+ #      <<: *airflow-common-depends-on
+ #      airflow-init:
+ #        condition: service_completed_successfully
 
 volumes:
   pgdata:
