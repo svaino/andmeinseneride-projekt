@@ -9,7 +9,7 @@ from include.dbt_config import DBT
 
 @dag(
     dag_id="ariregister_paevane",
-    schedule="0 3 * * *",
+    schedule="0 3 1 * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
     max_active_runs=1,

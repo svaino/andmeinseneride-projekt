@@ -7,7 +7,7 @@ from airflow.sdk import dag
 
 @dag(
     dag_id="ariregister_incremental_daily",
-    schedule="@daily",
+    schedule="30 3 * * *",
     start_date=pendulum.datetime(2026, 6, 1, tz="Europe/Tallinn"),
     catchup=False,
     max_active_runs=1,

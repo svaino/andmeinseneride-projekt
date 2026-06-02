@@ -148,6 +148,7 @@ services:
     volumes:
       - ./superset/superset_config.py:/app/superset_config.py
       - superset-home:/app/superset_home
+      - ./superset/dashboards:/app/dashboards
     environment:
       SUPERSET_CONFIG_PATH: /app/superset_config.py
       DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
@@ -155,11 +156,15 @@ services:
       ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
       ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
-    command: >
-      sh -c "superset db upgrade && 
-             superset fab create-admin --username ${SUPERSET_ADMIN_USER} --firstname Admin --lastname User --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} && 
-             superset init"
-
+    command:
+        - /bin/sh
+        - -c
+        - |
+          superset db upgrade &&
+          superset fab create-admin --username ${SUPERSET_ADMIN_USER} --firstname Admin --lastname User --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} &&
+          superset init &&
+          find /app/dashboards -name '*.zip' | head -1 | xargs -I {} superset import-dashboards --path {} --username ${SUPERSET_ADMIN_USER} &&
+          echo "IMPORT DONE"
   superset:
     build:
       context: .
@@ -283,21 +288,6 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
 
- # airflow-worker:
- #    <<: *airflow-common
- #    command: task-execution-api-server
- #    container_name: andmeinseneeria-airflow-worker
- #    healthcheck:
- #     test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
- #     interval: 30s
- #     timeout: 10s
- #     retries: 5
- #     start_period: 30s
- #    restart: always
- #    depends_on:
- #      <<: *airflow-common-depends-on
- #      airflow-init:
- #        condition: service_completed_successfully
 
 volumes:
   pgdata:

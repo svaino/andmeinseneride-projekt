@@ -4,7 +4,9 @@ SELECT
     ar.maakond,
     e.kõrgeim_vanem,
     e.kõrgeim_vanem_nimi,
-    e. kõrgeim_vanem || '-' || e. kõrgeim_vanem_nimi as EMTAK_jaotis,
+    coalesce(
+    e.kõrgeim_vanem || '-' || TRIM(LEFT(e.kõrgeim_vanem_nimi, 60)) || CASE WHEN LENGTH(e.kõrgeim_vanem_nimi) > 60 THEN '...' ELSE '' END,
+    'Määramata') as emtak_jaotis,
     COUNT(ar.reg_kood) AS ettevotete_arv
 
 FROM {{ ref('int_ariregister_yldandmed') }} ar

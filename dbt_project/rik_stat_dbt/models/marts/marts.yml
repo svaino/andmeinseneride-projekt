@@ -74,28 +74,6 @@ models:
         tests:
           - not_null
 
-  - name: mart_maakonaded_statistika
-    description: "Maakonna taseme statistiline koondtabel, mis ühendab 2024. aasta rahvastikuandmed ja aktiivsete ettevõtete arvu."
-    columns:
-      - name: maakond
-        description: "Maakonna nimi."
-        tests:
-          - not_null
-          - unique
-
-      - name: elanike_arv
-        description: "Maakonna elanike koguarv 2024. aastal."
-        tests:
-          - not_null
-
-      - name: aktiivsete_ettevotete_arv
-        description: "Aktiivsete ehk registrisse kantud ettevõtete arv maakonnas."
-        tests:
-          - not_null
-
-      - name: elanikke_yhe_ettevotte_kohta
-        description: "Näitab, mitu elanikku tuleb ühe aktiivse ettevõtte kohta. Väiksem väärtus tähendab suuremat ettevõtete tihedust."
-
   - name: mart_uute_ariettevotete_arv_tegevusalati
     description: "Uute äriettevõtete arv tegevusala, maakonna ja õigusliku vormi grupi lõikes. Mudel kasutab EMTAK 2025 jaotist ning loendab valitud liikuva aasta ettevõtteid."
     columns:
