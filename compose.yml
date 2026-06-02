@@ -32,7 +32,7 @@ x-airflow-common:
     ARIREGISTER_USER: ${ARIREGISTER_USER}
     ARIREGISTER_PASSWORD: ${ARIREGISTER_PASSWORD}
     STAT_API_URL: ${STAT_API_URL}
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-dbt-core~=1.10.0 dbt-postgres==1.10.0 requests python-dotenv psycopg2-binary beautifulsoup4 pandas sqlalchemy}
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     AIRFLOW__OPERATORS__BASH_COMMAND_PREFIX: "bash -c"
   volumes:
@@ -95,7 +95,7 @@ services:
       - ./dbt_project:/app/dbt_project
     working_dir: /app/dbt_project/rik_stat_dbt
     ports:
-      - "8085:8085"
+      - "18080:8080"
     tty: true
 
   pipeline:

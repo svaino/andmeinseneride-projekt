@@ -138,6 +138,16 @@ Arenduses saad dbt-d käsitsi testida pipeline konteineris:
 MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
 ```
 
+Alternatiivselt on olemas eraldiseisev `dbt` teenus (image `Dockerfile.dbt`), mis on mõeldud käsitsi tööks ja diagnostikaks:
+
+```bash
+# Kontrolli dbt ühendust andmebaasiga
+docker compose exec dbt dbt debug
+
+# Käivita kogu dbt build käsitsi / diagnostikaks
+docker compose exec dbt dbt build
+```
+
 Pärast esimest `docker compose up`:
 
 1. Ava Airflow UI, **unpause** vajalikud DAG-id.
@@ -264,11 +274,11 @@ docker compose logs -f scheduler
 
 # Dbt käsud veebiliidese jaoks
 
-Kui konteinerid on püsti, siis veebiliidese jaoks käivita järgmised käsud:
+Kui konteinerid on püsti, siis veebiliidese jaoks käivita järgmised käsud (`dbt` teenus mapib pordi `18080:8080`):
 1. käsk (dokumentatsiooni failide uuendamiseks, andmete kogumine mudelitest):
-docker compose run --rm dbt dbt docs generate
+docker compose exec dbt dbt docs generate
 2. käsk (paneb käima kohaliku veebiserveri):
-docker compose run --rm -p 18080:8080 dbt dbt docs serve --port 8080 --host 0.0.0.0
+docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0
 
 Ja lõpetuseks veebiliides: http://localhost:18080
 
