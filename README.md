@@ -272,15 +272,45 @@ Scheduleri logisid saad vaadata nii:
 docker compose logs -f scheduler
 ```
 
-# Dbt käsud veebiliidese jaoks
+# Dbt dokumentatsioon (veebiliides)
 
-Kui konteinerid on püsti, siis veebiliidese jaoks käivita järgmised käsud (`dbt` teenus mapib pordi `18080:8080`):
-1. käsk (dokumentatsiooni failide uuendamiseks, andmete kogumine mudelitest):
+dbt oskab genereerida brauseris vaadatava dokumentatsiooni koos mudelite kirjelduste ja päritolugraafiga (lineage). dbt **ei ole** hostis installitud — see jookseb `dbt` teenuse konteineris (`andmeinseneeria-dbt`). Seega ära käivita käske otse Windowsis, vaid konteineris läbi `docker compose exec`.
+
+Konteineri sees kuulab dbt pordil `8080`, mille [`compose.yml`](compose.yml) mapib hosti pordile `18080` (`"18080:8080"`). Seetõttu peab `dbt docs serve` kasutama konteineri sees pordi `8080` ja `--host 0.0.0.0`, et host selleni läbi pordimapingu pääseks.
+
+Kui konteinerid on püsti, käivita projekti kaustast:
+
+1. Veendu, et `dbt` teenus töötab:
+
+```bash
+docker compose up -d dbt
+```
+
+2. Genereeri dokumentatsioon (kogub mudelitest metaandmed):
+
+```bash
 docker compose exec dbt dbt docs generate
-2. käsk (paneb käima kohaliku veebiserveri):
-docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0
+```
 
-Ja lõpetuseks veebiliides: http://localhost:18080
+3. Käivita kohalik veebiserver (konteineri port `8080`):
+
+```bash
+docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0 --no-browser
+```
+
+4. Ava brauseris: [http://localhost:18080](http://localhost:18080)
+
+Serveri peatamiseks vajuta terminalis `Ctrl+C`.
+
+Käsitsi diagnostikaks ja ühenduse kontrolliks saab sama teenust kasutada ka nii:
+
+```bash
+# Kontrolli dbt ühendust andmebaasiga
+docker compose exec dbt dbt debug
+
+# Käivita kogu dbt build käsitsi
+docker compose exec dbt dbt build
+```
 
 
 ## Korduskäivitused ja vanad andmed
