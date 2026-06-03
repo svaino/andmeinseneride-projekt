@@ -162,9 +162,10 @@ services:
         - |
           superset db upgrade &&
           superset fab create-admin --username ${SUPERSET_ADMIN_USER} --firstname Admin --lastname User --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} &&
-          superset init &&
-          find /app/dashboards -name '*.zip' | head -1 | xargs -I {} superset import-dashboards --path {} --username ${SUPERSET_ADMIN_USER} &&
-          echo "IMPORT DONE"
+          superset init 
+  # && find /app/dashboards -name '*.zip' | head -1 | xargs -I {} superset import-dashboards --path {} --username ${SUPERSET_ADMIN_USER} &&
+  # echo "IMPORT DONE"
+  
   superset:
     build:
       context: .
