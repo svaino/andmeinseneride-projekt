@@ -2,6 +2,9 @@ FROM apache/superset:6.0.0
 
 USER root
 
+# seda rida on vaja Superset dashboardi zipist pw eemaldamiseks
+RUN apt-get update && apt-get install -y unzip zip
+
 RUN . /app/.venv/bin/activate && \
     uv pip install psycopg2-binary
 
