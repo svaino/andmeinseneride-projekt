@@ -25,7 +25,7 @@ SELECT
         case 
              when emtak_versioon = 'EMTAK 2008' then (
                  SELECT kood_emtak_2025::text
-                 FROM staging.emtak_2008_2025 e
+                 FROM {{ source('postgres_staging', 'emtak_2008_2025') }}  e
                  WHERE e.kood_emtak_2008::text = au.emtak_kood
                  ORDER BY 
                      CASE 

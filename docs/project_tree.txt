@@ -1,0 +1,412 @@
+├── ./
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── compose.yml
+│   ├── Dockerfile.app
+│   ├── Dockerfile.dbt
+│   ├── Dockerfile.superset
+│   ├── Projektiplaan.md
+│   ├── README.md
+│   ├── .vscode/
+│   │   ├── settings.json
+│   ├── airflow/
+│   │   ├── config/
+│   │   │   ├── airflow.cfg
+│   │   ├── dags/
+│   │   │   ├── andmestiku_esmane_taitmine.py
+│   │   │   ├── ariregister_incremental.py
+│   │   │   ├── ariregister_paevane.py
+│   │   │   ├── rahvastik_kuine.py
+│   │   │   ├── include/
+│   │   │   │   ├── dbt_config.py
+│   │   │   │   ├── __init__.py
+│   │   ├── plugins/
+│   ├── data/
+│   │   ├── EMTAK_2025.csv
+│   │   ├── EMTAK_uleminekutabel_2008_EMTAK_2025.csv
+│   │   ├── ettevotja_rekvisiidid__kaardile_kantud_isikud.xml/
+│   ├── dbt_project/
+│   │   ├── rik_stat_dbt/
+│   │   │   ├── .gitignore
+│   │   │   ├── .user.yml
+│   │   │   ├── dbt_project.yml
+│   │   │   ├── package-lock.yml
+│   │   │   ├── packages.yml
+│   │   │   ├── profiles.yml
+│   │   │   ├── README.md
+│   │   │   ├── selectors.yml
+│   │   │   ├── analyses/
+│   │   │   │   ├── .gitkeep
+│   │   │   ├── dbt_packages/
+│   │   │   │   ├── dbt_utils/
+│   │   │   │   │   ├── .gitignore
+│   │   │   │   │   ├── CHANGELOG.md
+│   │   │   │   │   ├── CONTRIBUTING.md
+│   │   │   │   │   ├── dbt_project.yml
+│   │   │   │   │   ├── dev-requirements.txt
+│   │   │   │   │   ├── docker-compose.yml
+│   │   │   │   │   ├── LICENSE
+│   │   │   │   │   ├── Makefile
+│   │   │   │   │   ├── pytest.ini
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── RELEASE.md
+│   │   │   │   │   ├── run_functional_test.sh
+│   │   │   │   │   ├── run_test.sh
+│   │   │   │   │   ├── .circleci/
+│   │   │   │   │   │   ├── config.yml
+│   │   │   │   │   ├── .github/
+│   │   │   │   │   │   ├── CODEOWNERS
+│   │   │   │   │   │   ├── pull_request_template.md
+│   │   │   │   │   │   ├── ISSUE_TEMPLATE/
+│   │   │   │   │   │   │   ├── bug_report.md
+│   │   │   │   │   │   │   ├── dbt_minor_release.md
+│   │   │   │   │   │   │   ├── feature_request.md
+│   │   │   │   │   │   │   ├── utils_minor_release.md
+│   │   │   │   │   ├── docs/
+│   │   │   │   │   │   ├── decisions/
+│   │   │   │   │   │   │   ├── adr-0000-documenting-architecture-decisions.md
+│   │   │   │   │   │   │   ├── adr-0001-decision-record-format.md
+│   │   │   │   │   │   │   ├── adr-0002-cross-database-utils.md
+│   │   │   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── etc/
+│   │   │   │   │   │   ├── dbt-logo.png
+│   │   │   │   │   ├── integration_tests/
+│   │   │   │   │   │   ├── .gitignore
+│   │   │   │   │   │   ├── dbt_project.yml
+│   │   │   │   │   │   ├── packages.yml
+│   │   │   │   │   │   ├── README.md
+│   │   │   │   │   │   ├── .env/
+│   │   │   │   │   │   │   ├── bigquery.env
+│   │   │   │   │   │   │   ├── postgres.env
+│   │   │   │   │   │   │   ├── redshift.env
+│   │   │   │   │   │   │   ├── snowflake.env
+│   │   │   │   │   │   ├── ci/
+│   │   │   │   │   │   │   ├── sample.profiles.yml
+│   │   │   │   │   │   ├── data/
+│   │   │   │   │   │   │   ├── .gitkeep
+│   │   │   │   │   │   │   ├── cross_db/
+│   │   │   │   │   │   │   │   ├── data_any_value_expected.csv
+│   │   │   │   │   │   │   │   ├── data_array_append.csv
+│   │   │   │   │   │   │   │   ├── data_array_concat.csv
+│   │   │   │   │   │   │   │   ├── data_array_construct.csv
+│   │   │   │   │   │   │   │   ├── data_bool_or.csv
+│   │   │   │   │   │   │   │   ├── data_bool_or_expected.csv
+│   │   │   │   │   │   │   │   ├── data_cast_bool_to_text
+│   │   │   │   │   │   │   │   ├── data_concat.csv
+│   │   │   │   │   │   │   │   ├── data_dateadd.csv
+│   │   │   │   │   │   │   │   ├── data_datediff.csv
+│   │   │   │   │   │   │   │   ├── data_date_trunc.csv
+│   │   │   │   │   │   │   │   ├── data_hash.csv
+│   │   │   │   │   │   │   │   ├── data_last_day.csv
+│   │   │   │   │   │   │   │   ├── data_length.csv
+│   │   │   │   │   │   │   │   ├── data_listagg.csv
+│   │   │   │   │   │   │   │   ├── data_listagg_output.csv
+│   │   │   │   │   │   │   │   ├── data_position.csv
+│   │   │   │   │   │   │   │   ├── data_replace.csv
+│   │   │   │   │   │   │   │   ├── data_right.csv
+│   │   │   │   │   │   │   │   ├── data_safe_cast.csv
+│   │   │   │   │   │   │   │   ├── data_split_part.csv
+│   │   │   │   │   │   │   ├── datetime/
+│   │   │   │   │   │   │   │   ├── data_date_spine.csv
+│   │   │   │   │   │   │   ├── etc/
+│   │   │   │   │   │   │   │   ├── data_people.csv
+│   │   │   │   │   │   │   ├── geo/
+│   │   │   │   │   │   │   │   ├── data_haversine_km.csv
+│   │   │   │   │   │   │   │   ├── data_haversine_mi.csv
+│   │   │   │   │   │   │   ├── materializations/
+│   │   │   │   │   │   │   │   ├── data_insert_by_period.csv
+│   │   │   │   │   │   │   ├── schema_tests/
+│   │   │   │   │   │   │   │   ├── data_cardinality_equality_a.csv
+│   │   │   │   │   │   │   │   ├── data_cardinality_equality_b.csv
+│   │   │   │   │   │   │   │   ├── data_not_null_proportion.csv
+│   │   │   │   │   │   │   │   ├── data_test_accepted_range.csv
+│   │   │   │   │   │   │   │   ├── data_test_at_least_one.csv
+│   │   │   │   │   │   │   │   ├── data_test_equal_rowcount.csv
+│   │   │   │   │   │   │   │   ├── data_test_expression_is_true.csv
+│   │   │   │   │   │   │   │   ├── data_test_fewer_rows_than_table_1.csv
+│   │   │   │   │   │   │   │   ├── data_test_fewer_rows_than_table_2.csv
+│   │   │   │   │   │   │   │   ├── data_test_mutually_exclusive_ranges_no_gaps.csv
+│   │   │   │   │   │   │   │   ├── data_test_mutually_exclusive_ranges_with_gaps.csv
+│   │   │   │   │   │   │   │   ├── data_test_mutually_exclusive_ranges_with_gaps_zero_length.csv
+│   │   │   │   │   │   │   │   ├── data_test_not_accepted_values.csv
+│   │   │   │   │   │   │   │   ├── data_test_not_constant.csv
+│   │   │   │   │   │   │   │   ├── data_test_not_null_where.csv
+│   │   │   │   │   │   │   │   ├── data_test_relationships_where_table_1.csv
+│   │   │   │   │   │   │   │   ├── data_test_relationships_where_table_2.csv
+│   │   │   │   │   │   │   │   ├── data_test_sequential_timestamps.csv
+│   │   │   │   │   │   │   │   ├── data_test_sequential_values.csv
+│   │   │   │   │   │   │   │   ├── data_test_unique_where.csv
+│   │   │   │   │   │   │   │   ├── data_unique_combination_of_columns.csv
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   ├── sql/
+│   │   │   │   │   │   │   │   ├── data_deduplicate.csv
+│   │   │   │   │   │   │   │   ├── data_deduplicate_expected.csv
+│   │   │   │   │   │   │   │   ├── data_events_20180101.csv
+│   │   │   │   │   │   │   │   ├── data_events_20180102.csv
+│   │   │   │   │   │   │   │   ├── data_events_20180103.csv
+│   │   │   │   │   │   │   │   ├── data_filtered_columns_in_relation.csv
+│   │   │   │   │   │   │   │   ├── data_filtered_columns_in_relation_expected.csv
+│   │   │   │   │   │   │   │   ├── data_generate_series.csv
+│   │   │   │   │   │   │   │   ├── data_get_column_values.csv
+│   │   │   │   │   │   │   │   ├── data_get_column_values_dropped.csv
+│   │   │   │   │   │   │   │   ├── data_get_column_values_where.csv
+│   │   │   │   │   │   │   │   ├── data_get_column_values_where_expected.csv
+│   │   │   │   │   │   │   │   ├── data_get_query_results_as_dict.csv
+│   │   │   │   │   │   │   │   ├── data_nullcheck_table.csv
+│   │   │   │   │   │   │   │   ├── data_pivot.csv
+│   │   │   │   │   │   │   │   ├── data_pivot_expected.csv
+│   │   │   │   │   │   │   │   ├── data_pivot_expected_apostrophe.csv
+│   │   │   │   │   │   │   │   ├── data_safe_add.csv
+│   │   │   │   │   │   │   │   ├── data_star.csv
+│   │   │   │   │   │   │   │   ├── data_star_aggregate.csv
+│   │   │   │   │   │   │   │   ├── data_star_aggregate_expected.csv
+│   │   │   │   │   │   │   │   ├── data_star_expected.csv
+│   │   │   │   │   │   │   │   ├── data_star_prefix_suffix_expected.csv
+│   │   │   │   │   │   │   │   ├── data_surrogate_key.csv
+│   │   │   │   │   │   │   │   ├── data_union_events_expected.csv
+│   │   │   │   │   │   │   │   ├── data_union_expected.csv
+│   │   │   │   │   │   │   │   ├── data_union_table_1.csv
+│   │   │   │   │   │   │   │   ├── data_union_table_2.csv
+│   │   │   │   │   │   │   │   ├── data_unpivot.csv
+│   │   │   │   │   │   │   │   ├── data_unpivot_bool.csv
+│   │   │   │   │   │   │   │   ├── data_unpivot_bool_expected.csv
+│   │   │   │   │   │   │   │   ├── data_unpivot_expected.csv
+│   │   │   │   │   │   │   │   ├── data_unpivot_original_api_expected.csv
+│   │   │   │   │   │   │   │   ├── data_width_bucket.csv
+│   │   │   │   │   │   │   ├── web/
+│   │   │   │   │   │   │   │   ├── data_urls.csv
+│   │   │   │   │   │   │   │   ├── data_url_host.csv
+│   │   │   │   │   │   │   │   ├── data_url_path.csv
+│   │   │   │   │   │   ├── macros/
+│   │   │   │   │   │   │   ├── .gitkeep
+│   │   │   │   │   │   │   ├── assert_equal_values.sql
+│   │   │   │   │   │   │   ├── limit_zero.sql
+│   │   │   │   │   │   │   ├── tests.sql
+│   │   │   │   │   │   ├── models/
+│   │   │   │   │   │   │   ├── cross_db_utils/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_any_value.sql
+│   │   │   │   │   │   │   │   ├── test_array_append.sql
+│   │   │   │   │   │   │   │   ├── test_array_concat.sql
+│   │   │   │   │   │   │   │   ├── test_array_construct.sql
+│   │   │   │   │   │   │   │   ├── test_bool_or.sql
+│   │   │   │   │   │   │   │   ├── test_concat.sql
+│   │   │   │   │   │   │   │   ├── test_current_timestamp.sql
+│   │   │   │   │   │   │   │   ├── test_current_timestamp_in_utc.sql
+│   │   │   │   │   │   │   │   ├── test_dateadd.sql
+│   │   │   │   │   │   │   │   ├── test_datediff.sql
+│   │   │   │   │   │   │   │   ├── test_date_trunc.sql
+│   │   │   │   │   │   │   │   ├── test_hash.sql
+│   │   │   │   │   │   │   │   ├── test_last_day.sql
+│   │   │   │   │   │   │   │   ├── test_length.sql
+│   │   │   │   │   │   │   │   ├── test_listagg.sql
+│   │   │   │   │   │   │   │   ├── test_position.sql
+│   │   │   │   │   │   │   │   ├── test_replace.sql
+│   │   │   │   │   │   │   │   ├── test_right.sql
+│   │   │   │   │   │   │   │   ├── test_safe_cast.sql
+│   │   │   │   │   │   │   │   ├── test_split_part.sql
+│   │   │   │   │   │   │   ├── datetime/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_date_spine.sql
+│   │   │   │   │   │   │   ├── generic_tests/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_equal_column_subset.sql
+│   │   │   │   │   │   │   │   ├── test_equal_rowcount.sql
+│   │   │   │   │   │   │   │   ├── test_fewer_rows_than.sql
+│   │   │   │   │   │   │   │   ├── test_recency.sql
+│   │   │   │   │   │   │   ├── geo/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_haversine_distance_km.sql
+│   │   │   │   │   │   │   │   ├── test_haversine_distance_mi.sql
+│   │   │   │   │   │   │   ├── materializations/
+│   │   │   │   │   │   │   │   ├── expected_insert_by_period.sql
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_insert_by_period.sql
+│   │   │   │   │   │   │   ├── sql/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_deduplicate.sql
+│   │   │   │   │   │   │   │   ├── test_deduplicate_deprecated.sql
+│   │   │   │   │   │   │   │   ├── test_generate_series.sql
+│   │   │   │   │   │   │   │   ├── test_get_column_values.sql
+│   │   │   │   │   │   │   │   ├── test_get_column_values_where.sql
+│   │   │   │   │   │   │   │   ├── test_get_filtered_columns_in_relation.sql
+│   │   │   │   │   │   │   │   ├── test_get_relations_by_pattern.sql
+│   │   │   │   │   │   │   │   ├── test_get_relations_by_prefix_and_union.sql
+│   │   │   │   │   │   │   │   ├── test_groupby.sql
+│   │   │   │   │   │   │   │   ├── test_nullcheck_table.sql
+│   │   │   │   │   │   │   │   ├── test_pivot.sql
+│   │   │   │   │   │   │   │   ├── test_pivot_apostrophe.sql
+│   │   │   │   │   │   │   │   ├── test_safe_add.sql
+│   │   │   │   │   │   │   │   ├── test_star.sql
+│   │   │   │   │   │   │   │   ├── test_star_aggregate.sql
+│   │   │   │   │   │   │   │   ├── test_star_prefix_suffix.sql
+│   │   │   │   │   │   │   │   ├── test_star_uppercase.sql
+│   │   │   │   │   │   │   │   ├── test_surrogate_key.sql
+│   │   │   │   │   │   │   │   ├── test_union.sql
+│   │   │   │   │   │   │   │   ├── test_union_base.sql
+│   │   │   │   │   │   │   │   ├── test_union_no_source_column.sql
+│   │   │   │   │   │   │   │   ├── test_union_where.sql
+│   │   │   │   │   │   │   │   ├── test_union_where_base.sql
+│   │   │   │   │   │   │   │   ├── test_unpivot.sql
+│   │   │   │   │   │   │   │   ├── test_unpivot_bool.sql
+│   │   │   │   │   │   │   │   ├── test_unpivot_original_api.sql
+│   │   │   │   │   │   │   │   ├── test_width_bucket.sql
+│   │   │   │   │   │   │   ├── web/
+│   │   │   │   │   │   │   │   ├── schema.yml
+│   │   │   │   │   │   │   │   ├── test_urls.sql
+│   │   │   │   │   │   │   │   ├── test_url_host.sql
+│   │   │   │   │   │   │   │   ├── test_url_path.sql
+│   │   │   │   │   │   ├── tests/
+│   │   │   │   │   │   │   ├── assert_get_query_results_as_dict_objects_equal.sql
+│   │   │   │   │   │   │   ├── generic/
+│   │   │   │   │   │   │   │   ├── expect_table_columns_to_match_set.sql
+│   │   │   │   │   │   │   ├── jinja_helpers/
+│   │   │   │   │   │   │   │   ├── assert_pretty_output_msg_is_string.sql
+│   │   │   │   │   │   │   │   ├── assert_pretty_time_is_string.sql
+│   │   │   │   │   │   │   │   ├── test_slugify.sql
+│   │   │   │   │   │   │   ├── sql/
+│   │   │   │   │   │   │   │   ├── test_get_column_values_use_default.sql
+│   │   │   │   │   ├── macros/
+│   │   │   │   │   │   ├── cross_db_utils/
+│   │   │   │   │   │   │   ├── array_append.sql
+│   │   │   │   │   │   │   ├── array_concat.sql
+│   │   │   │   │   │   │   ├── array_construct.sql
+│   │   │   │   │   │   │   ├── cast_array_to_string.sql
+│   │   │   │   │   │   │   ├── current_timestamp.sql
+│   │   │   │   │   │   │   ├── deprecated/
+│   │   │   │   │   │   │   │   ├── any_value.sql
+│   │   │   │   │   │   │   │   ├── bool_or.sql
+│   │   │   │   │   │   │   │   ├── cast_bool_to_text.sql
+│   │   │   │   │   │   │   │   ├── concat.sql
+│   │   │   │   │   │   │   │   ├── datatypes.sql
+│   │   │   │   │   │   │   │   ├── dateadd.sql
+│   │   │   │   │   │   │   │   ├── datediff.sql
+│   │   │   │   │   │   │   │   ├── date_trunc.sql
+│   │   │   │   │   │   │   │   ├── escape_single_quotes.sql
+│   │   │   │   │   │   │   │   ├── except.sql
+│   │   │   │   │   │   │   │   ├── hash.sql
+│   │   │   │   │   │   │   │   ├── identifier.sql
+│   │   │   │   │   │   │   │   ├── intersect.sql
+│   │   │   │   │   │   │   │   ├── last_day.sql
+│   │   │   │   │   │   │   │   ├── length.sql
+│   │   │   │   │   │   │   │   ├── listagg.sql
+│   │   │   │   │   │   │   │   ├── literal.sql
+│   │   │   │   │   │   │   │   ├── position.sql
+│   │   │   │   │   │   │   │   ├── replace.sql
+│   │   │   │   │   │   │   │   ├── right.sql
+│   │   │   │   │   │   │   │   ├── safe_cast.sql
+│   │   │   │   │   │   │   │   ├── split_part.sql
+│   │   │   │   │   │   │   │   ├── xdb_deprecation_warning.sql
+│   │   │   │   │   │   ├── generic_tests/
+│   │   │   │   │   │   │   ├── accepted_range.sql
+│   │   │   │   │   │   │   ├── at_least_one.sql
+│   │   │   │   │   │   │   ├── cardinality_equality.sql
+│   │   │   │   │   │   │   ├── equality.sql
+│   │   │   │   │   │   │   ├── equal_rowcount.sql
+│   │   │   │   │   │   │   ├── expression_is_true.sql
+│   │   │   │   │   │   │   ├── fewer_rows_than.sql
+│   │   │   │   │   │   │   ├── mutually_exclusive_ranges.sql
+│   │   │   │   │   │   │   ├── not_accepted_values.sql
+│   │   │   │   │   │   │   ├── not_constant.sql
+│   │   │   │   │   │   │   ├── not_null_proportion.sql
+│   │   │   │   │   │   │   ├── recency.sql
+│   │   │   │   │   │   │   ├── relationships_where.sql
+│   │   │   │   │   │   │   ├── sequential_values.sql
+│   │   │   │   │   │   │   ├── test_not_null_where.sql
+│   │   │   │   │   │   │   ├── test_unique_where.sql
+│   │   │   │   │   │   │   ├── unique_combination_of_columns.sql
+│   │   │   │   │   │   ├── jinja_helpers/
+│   │   │   │   │   │   │   ├── log_info.sql
+│   │   │   │   │   │   │   ├── pretty_log_format.sql
+│   │   │   │   │   │   │   ├── pretty_time.sql
+│   │   │   │   │   │   │   ├── slugify.sql
+│   │   │   │   │   │   │   ├── _is_ephemeral.sql
+│   │   │   │   │   │   │   ├── _is_relation.sql
+│   │   │   │   │   │   ├── materializations/
+│   │   │   │   │   │   │   ├── insert_by_period_materialization.sql
+│   │   │   │   │   │   ├── sql/
+│   │   │   │   │   │   │   ├── date_spine.sql
+│   │   │   │   │   │   │   ├── deduplicate.sql
+│   │   │   │   │   │   │   ├── generate_series.sql
+│   │   │   │   │   │   │   ├── get_column_values.sql
+│   │   │   │   │   │   │   ├── get_filtered_columns_in_relation.sql
+│   │   │   │   │   │   │   ├── get_query_results_as_dict.sql
+│   │   │   │   │   │   │   ├── get_relations_by_pattern.sql
+│   │   │   │   │   │   │   ├── get_relations_by_prefix.sql
+│   │   │   │   │   │   │   ├── get_tables_by_pattern_sql.sql
+│   │   │   │   │   │   │   ├── get_tables_by_prefix_sql.sql
+│   │   │   │   │   │   │   ├── get_table_types_sql.sql
+│   │   │   │   │   │   │   ├── groupby.sql
+│   │   │   │   │   │   │   ├── haversine_distance.sql
+│   │   │   │   │   │   │   ├── nullcheck.sql
+│   │   │   │   │   │   │   ├── nullcheck_table.sql
+│   │   │   │   │   │   │   ├── pivot.sql
+│   │   │   │   │   │   │   ├── safe_add.sql
+│   │   │   │   │   │   │   ├── star.sql
+│   │   │   │   │   │   │   ├── surrogate_key.sql
+│   │   │   │   │   │   │   ├── union.sql
+│   │   │   │   │   │   │   ├── unpivot.sql
+│   │   │   │   │   │   │   ├── width_bucket.sql
+│   │   │   │   │   │   ├── web/
+│   │   │   │   │   │   │   ├── get_url_host.sql
+│   │   │   │   │   │   │   ├── get_url_parameter.sql
+│   │   │   │   │   │   │   ├── get_url_path.sql
+│   │   │   │   │   ├── tests/
+│   │   │   │   │   │   ├── conftest.py
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   ├── functional/
+│   │   │   │   │   │   │   ├── cross_db_utils/
+│   │   │   │   │   │   │   │   ├── test_utils.py
+│   │   │   │   │   │   │   ├── data_type/
+│   │   │   │   │   │   │   │   ├── base_data_type.py
+│   │   │   │   │   │   │   │   ├── test_type_bigint.py
+│   │   │   │   │   │   │   │   ├── test_type_float.py
+│   │   │   │   │   │   │   │   ├── test_type_int.py
+│   │   │   │   │   │   │   │   ├── test_type_numeric.py
+│   │   │   │   │   │   │   │   ├── test_type_string.py
+│   │   │   │   │   │   │   │   ├── test_type_timestamp.py
+│   │   │   ├── macros/
+│   │   │   │   ├── .gitkeep
+│   │   │   │   ├── generate_schema_name.sql
+│   │   │   ├── models/
+│   │   │   │   ├── intermediate/
+│   │   │   │   │   ├── intermediate.yml
+│   │   │   │   │   ├── int_ariregister_yldandmed.sql
+│   │   │   │   │   ├── int_dim_emtak.sql
+│   │   │   │   │   ├── int_dim_maakonnad.sql
+│   │   │   │   │   ├── int_ettevotete_arv_maakonniti_emtak.sql
+│   │   │   │   │   ├── int_stat_rahvastik.sql
+│   │   │   │   ├── marts/
+│   │   │   │   │   ├── marts.yml
+│   │   │   │   │   ├── mart_ariettevotted_trend.sql
+│   │   │   │   │   ├── mart_emtak_portfolio_muutus.sql
+│   │   │   │   │   ├── mart_ettevotlikus_6a.sql
+│   │   │   │   │   ├── mart_ettevotlikus_geo.sql
+│   │   │   │   │   ├── mart_uute_ariettevotete_arv_tegevusalati.sql
+│   │   │   │   │   ├── mart_viimane_kuu_ariettevotted.sql
+│   │   │   │   ├── staging/
+│   │   │   │   │   ├── src_sources.yml
+│   │   │   ├── seeds/
+│   │   │   │   ├── .gitkeep
+│   │   │   │   ├── dim_maakonnad.csv
+│   │   │   ├── snapshots/
+│   │   │   │   ├── .gitkeep
+│   │   │   ├── tests/
+│   │   │   │   ├── .gitkeep
+│   │   │   │   ├── assert_no_negative_population.sql
+│   ├── docs/
+│   │   ├── arhitektuur.md
+│   │   ├── image.png
+│   │   ├── progress.md
+│   ├── init/
+│   ├── scripts/
+│   │   ├── 01_load_statistikaamet.py
+│   │   ├── 02_01_load_ariregister_yldandmed.py
+│   │   ├── 03_load_emtak.py
+│   │   ├── 04_load_ariregister_incremental.py
+│   ├── superset/
+│   │   ├── superset_config.py
+│   │   ├── dashboards/
+│   │   │   ├── dashboard_export_20260603T164448.zip
