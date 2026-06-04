@@ -4,28 +4,26 @@ import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag
 
-from include.dbt_config import DBT
-
 
 @dag(
-    dag_id="ariregister_paevane",
+    dag_id="03_ariregister_kuuine_taielaadimine",
     schedule="0 3 1 * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
     max_active_runs=1,
-    tags=["ariregister", "daily"],
+    tags=["ariregister", "monthly", "import"],
     doc_md="""
-    Igapäevane Äriregistri voog.
+    Kuine Äriregistri täislaadimine (1. kuupäev 03:00).
 
-    dbt mudelid valitakse `selectors.yml` kaudu — uusi mudeleid lisades
-    Airflow DAG-e muuta ei pea.
+    Laadib üldandmed; kontrollib EMTAK ja rahvastiku staging-tabelid ning laadib
+    need vajadusel. dbt käivitub eraldi DAG-is `05_dbt_igapaevane` (05:00).
     """,
     default_args={
         "retries": 3,
         "retry_delay": timedelta(minutes=5),
     },
 )
-def ariregister_paevane():
+def ariregister_kuuine_taielaadimine():
     lae_yldandmed = BashOperator(
         task_id="lae_ariregister_yldandmed",
         bash_command="python /opt/airflow/scripts/02_01_load_ariregister_yldandmed.py",
@@ -33,7 +31,7 @@ def ariregister_paevane():
 
     tagab_emtak = BashOperator(
         task_id="tagab_emtak_tabelid",
-        bash_command=f"""
+        bash_command="""
 python <<'PY'
 import os
 import subprocess
@@ -64,21 +62,15 @@ if not missing:
     sys.exit(0)
 
 print("Puuduvad tabelid:", ", ".join(missing))
-print("Laen EMTAK CSV-d ja ehitan dimensioonivaated...")
+print("Laen EMTAK CSV-d...")
 subprocess.check_call(["python", "/opt/airflow/scripts/03_load_emtak.py"])
-subprocess.check_call(["bash", "-c", "{DBT} run --selector bootstrap_dims"])
 PY
 """,
     )
 
-    dbt_stg = BashOperator(
-        task_id="dbt_run_staging_rik",
-        bash_command=f"{DBT} run --selector staging_rik",
-    )
-
     tagab_rahvastik = BashOperator(
         task_id="tagab_rahvastik",
-        bash_command=f"""
+        bash_command="""
 python <<'PY'
 import os
 import subprocess
@@ -103,58 +95,19 @@ def exists(cur, relation):
 with conn:
     with conn.cursor() as cur:
         need_stat_load = not exists(cur, "staging.stat_rahvastik")
-        need_seed = not exists(cur, "staging.dim_maakonnad")
-        need_stat_stg = not exists(cur, "staging.stg_stat_rahvastik")
-        need_dim_mk = not exists(cur, "intermediate.int_dim_maakonnad")
 conn.close()
 
-if not any((need_stat_load, need_seed, need_stat_stg, need_dim_mk)):
-    print("Rahvastiku andmed ja dbt vaated on olemas.")
+if not need_stat_load:
+    print("Rahvastiku andmed on olemas.")
     sys.exit(0)
 
-if need_stat_load:
-    print("Laen Statistikaameti rahvastiku andmed...")
-    subprocess.check_call(["python", "/opt/airflow/scripts/01_load_statistikaamet.py"])
-
-if need_seed:
-    print("Käivitan dbt seed...")
-    subprocess.check_call(["bash", "-c", "{DBT} seed"])
-
-if need_stat_stg:
-    print("Ehitan rahvastiku staging vaate...")
-    subprocess.check_call(["bash", "-c", "{DBT} run --selector staging_stat"])
-
-if need_dim_mk:
-    print("Ehitan dimensioonivaated...")
-    subprocess.check_call(["bash", "-c", "{DBT} run --selector bootstrap_dims"])
+print("Laen Statistikaameti rahvastiku andmed...")
+subprocess.check_call(["python", "/opt/airflow/scripts/01_load_statistikaamet.py"])
 PY
 """,
     )
 
-    dbt_intermediate = BashOperator(
-        task_id="dbt_run_intermediate",
-        bash_command=f"{DBT} run --selector layer_intermediate",
-    )
-
-    dbt_marts = BashOperator(
-        task_id="dbt_run_marts",
-        bash_command=f"{DBT} run --selector layer_marts",
-    )
-
-    dbt_test = BashOperator(
-        task_id="dbt_test",
-        bash_command=f"{DBT} test",
-    )
-
-    (
-        lae_yldandmed
-        >> tagab_emtak
-        >> dbt_stg
-        >> tagab_rahvastik
-        >> dbt_intermediate
-        >> dbt_marts
-        >> dbt_test
-    )
+    lae_yldandmed >> tagab_emtak >> tagab_rahvastik
 
 
-ariregister_paevane()
+ariregister_kuuine_taielaadimine()

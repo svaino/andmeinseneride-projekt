@@ -15,10 +15,11 @@
 │   │   ├── config/
 │   │   │   ├── airflow.cfg
 │   │   ├── dags/
-│   │   │   ├── andmestiku_esmane_taitmine.py
-│   │   │   ├── ariregister_incremental.py
-│   │   │   ├── ariregister_paevane.py
-│   │   │   ├── rahvastik_kuine.py
+│   │   │   ├── 01_andmestiku_esmane_taitmine.py
+│   │   │   ├── 02_rahvastik_kuuine_laadimine.py
+│   │   │   ├── 03_ariregister_kuuine_taielaadimine.py
+│   │   │   ├── 04_ariregister_igapaevane_increment.py
+│   │   │   ├── 05_dbt_igapaevane.py
 │   │   │   ├── include/
 │   │   │   │   ├── dbt_config.py
 │   │   │   │   ├── __init__.py

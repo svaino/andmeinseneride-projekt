@@ -25,10 +25,10 @@ Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektu
 |---|---|
 | Selge äriküsimus | EMTAK ja maakondade kaupa uute ettevõtete ning ettevõtlikkuse analüüs. |
 | Ajas muutuv andmeallikas | Äriregistri igapäevased väljavõtted; Statistikaameti kuine uuendus. |
-| Automatiseeritud sissevõtt | Airflow DAG-id (`airflow/dags/`). |
-| Transformatsioon | dbt mudelid (`dbt_project/rik_stat_dbt/`): staging → intermediate → marts. |
-| Staatiline dimensioon | EMTAK CSV-d, `dbt seed` (maakonnad), dimensioonivaated. |
-| Andmekvaliteedi testid | `dbt test` (DAG-ide lõpus). |
+| Automatiseeritud sissevõtt | Airflow import-DAG-id (`01_`–`04_` failid `airflow/dags/`). |
+| Transformatsioon | dbt mudelid (`dbt_project/rik_stat_dbt/`): staging → intermediate → marts; igapäevane DAG `05_dbt_igapaevane`. |
+| Staatiline dimensioon | EMTAK CSV-d → staging; maakondade seemned (`dbt seed` → `staging.dim_maakonnad`). |
+| Andmekvaliteedi testid | `dbt test` (`05_dbt_igapaevane` lõpus). |
 | Näidikulaud | Superset (automaatne import `superset/dashboards/` zipist käivitamisel). |
 | Saladused | `.env` (repos ainult `.env.example`). |
 
@@ -43,8 +43,8 @@ flowchart LR
     C --> D[dbt]
     D --> E[(intermediate / marts)]
     E --> G[Superset]
-    H[Airflow] --> B
-    H --> D
+    H1[Airflow import DAG-id] --> B
+    H2[Airflow 05_dbt_igapaevane] --> D
 ```
 
 Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
@@ -85,25 +85,44 @@ Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
 
 ### Airflow DAG-id
 
+Import ja dbt on **eraldi DAG-id**: laadimisskriptid (`01_`–`04_`) ja transformatsioonid (`05_`). Failinimed `airflow/dags/` algavad järjekorranumbriga; `dag_id` ühtib failinimega.
+
 DAG-id on vaikimisi **pausil** — ava UI, **unpause**, seejärel käivita bootstrap.
 
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
-| `andmestiku_esmane_taitmine` | käsitsi | EMTAK → staging, `dbt deps`, `dbt seed`, dimensioonivaated |
-| `rahvastik_kuine` | iga kuu, 1. kp 04:00 | Rahvastik → dbt staging → intermediate → marts → test |
-| `ariregister_paevane` | iga kuu, 1. kp 03:00 | Äriregistri üldandmed → dbt kihid → test |
-| `ariregister_incremental_daily` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
+| `01_andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging |
+| `02_rahvastik_kuuine_laadimine` | iga kuu, 1. kp 04:00 | Statistikaameti rahvastik → staging |
+| `03_ariregister_kuuine_taielaadimine` | iga kuu, 1. kp 03:00 | Äriregistri täislaadimine + tingimuslik EMTAK/rahvastik |
+| `04_ariregister_igapaevane_increment` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
+| `05_dbt_igapaevane` | iga päev 05:00 | `dbt deps` → seed → staging → intermediate → marts → test |
+
+**1. kuupäeva järjekord:** 03:00 täislaadimine → 03:30 inkrement → 04:00 rahvastik → 05:00 dbt.
 
 **Esmane käivitus pärast kloonimist:**
 
-1. **Trigger** `andmestiku_esmane_taitmine` (üks kord).
-2. **Trigger** `rahvastik_kuine`.
-3. **Trigger** `ariregister_paevane` (või oota ajakava).
-4. Jäta `ariregister_incremental_daily` unpause’itud igapäevaseks täienduseks.
+1. **Trigger** `01_andmestiku_esmane_taitmine` (üks kord).
+2. **Trigger** `02_rahvastik_kuuine_laadimine`.
+3. **Trigger** `03_ariregister_kuuine_taielaadimine` (või oota ajakava).
+4. **Unpause** `04_ariregister_igapaevane_increment` igapäevaseks täienduseks.
+5. **Trigger** või **unpause** `05_dbt_igapaevane` (transformatsioonid ja testid; ilma selleta puuduvad `intermediate` / `marts` kihid).
 
-Mudelite valik: [`dbt_project/rik_stat_dbt/selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml). Uue `.sql` faili lisamisel `models/marts/` piisab DAG-i uuesti triggerdamisest.
+Mudelite valik: [`dbt_project/rik_stat_dbt/selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml). Uue `.sql` faili lisamisel `models/marts/` piisab `05_dbt_igapaevane` uuesti käivitamisest.
 
-`./dbt_project` on mountitud Airflow konteineritesse; DAG-e ei pea dbt-mudelite pärast muutma.
+`./dbt_project` on mountitud Airflow konteineritesse; dbt-mudelite puhul piisab `05_dbt_igapaevane` DAG-ist.
+
+### PostgreSQL (analüütika)
+
+Ainult andmebaas:
+
+```bash
+docker compose up -d db
+docker compose exec db bash -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+`POSTGRES_USER` ja `POSTGRES_DB` tulevad konteinerisse `.env`-ist (`compose.yml` teenus `db`).
+
+Skeemid: `staging` (tabelid + seemned), `intermediate` (dbt **vaated**), `marts` (dbt tabelid). Vaadete loetelu: `\dv intermediate.*` (mitte `\dt`, mis näitab ainult tabeleid).
 
 ## Logid ja peatamine
 
@@ -133,12 +152,14 @@ MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/02_01_load_arireg
 MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/04_load_ariregister_incremental.py
 ```
 
-dbt ühe DAG-etapi asemel (`pipeline` või `dbt` teenus):
+dbt (`dbt` teenus; sama järjekord mis `05_dbt_igapaevane`):
 
 ```bash
-docker compose exec pipeline bash -c "cd dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
+docker compose run --rm dbt bash -c "dbt deps && dbt seed"
+docker compose run --rm dbt bash -c "dbt run --selector staging_rik && dbt run --selector staging_stat"
+docker compose run --rm dbt bash -c "dbt run --selector layer_intermediate && dbt run --selector layer_marts"
+docker compose run --rm dbt bash -c "dbt test"
 docker compose exec dbt dbt debug
-docker compose exec dbt dbt build
 ```
 
 ### dbt dokumentatsioon (veeb)
@@ -175,7 +196,7 @@ Kui automaatne dashboardi import ebaõnnestub (`superset-init` logid), lisa ühe
 | Kaust / fail | Roll |
 |---|---|
 | `compose.yml` | PostgreSQL, pipeline, dbt, Superset, Airflow |
-| `airflow/dags/` | Orkestreerimine |
+| `airflow/dags/` | Orkestreerimine (`01_`–`04_` import, `05_dbt_igapaevane`) |
 | `scripts/` | Python laadimisskriptid |
 | `dbt_project/rik_stat_dbt/` | Transformatsioonid ja testid |
 | `superset/` | Konfiguratsioon ja dashboardi eksport |
