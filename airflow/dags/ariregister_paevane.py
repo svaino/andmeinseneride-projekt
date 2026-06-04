@@ -103,7 +103,7 @@ def exists(cur, relation):
 with conn:
     with conn.cursor() as cur:
         need_stat_load = not exists(cur, "staging.stat_rahvastik")
-        need_seed = not exists(cur, "public.dim_maakonnad")
+        need_seed = not exists(cur, "staging.dim_maakonnad")
         need_stat_stg = not exists(cur, "staging.stg_stat_rahvastik")
         need_dim_mk = not exists(cur, "intermediate.int_dim_maakonnad")
 conn.close()

@@ -10,7 +10,12 @@ Otsast lõpuni andmeinseneeria töövoog: Äriregistri avaandmete API-st igapäe
 
 ## Äriküsimus
 
-Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?
+Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
+
+Äriettevõteteks loeme kasumit taotlevaid ettevõtteid (AS, OÜ, UÜ, TÜ, TÜH ja FIE).
+KPI-na defineerime ettevõtlikkust - uute äriettevõtte arvu tuhande tööealise (20-74a) elaniku kohta.
+Ajaperioodina kasutame libisevat aastat (ingl. k. rolling year) - pidevalt muutuv aastane periood, mis võimaldab andmeid võrrelda teatud määratud kuupäevast alates sama kuupäevani aasta tagasi (nt. 4. juuni 2025 - 3. juuni 2026)
+Rahvastikustatistikat arvestame kalendriaasta alguse seisuga (1. jaanuar).
 
 Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
