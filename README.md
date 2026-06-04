@@ -1,434 +1,186 @@
 # Eesti äriregistri muutuste voog
 
-Käesolev andmeinseneeria projekt ehitab otsast lõpuni andmetöövoo. Projekt loeb Äriregistri avaandmete API-st igapäevased muutuste väljavõtteid EMTAK tegevusalade ja maakondade kaupa ning täiendavalt loeb Statistikaameti API-st rahvastiku andmeid. Salvestab need PostgreSQL-i, leiab valdkonnad, kus registreeritakse kõige rohkem uusi ettevõtteid ning kus on juhatuse muudatuste sagedus kõige kõrgem, presenteerib rahvastiku jaotust, kontrollib andmekvaliteeti ja näitab tulemust Superseti näidikulaual. Äriregistri avaandmed uuenevad igapäevaselt. Statistikaameti andmed uuenevad kord kuus.
-Scheduler ehk ajastaja konteiner värskendab andmeid vaikimisi iga xx alguses.
+Otsast lõpuni andmeinseneeria töövoog: Äriregistri avaandmete API-st igapäevased muutused (EMTAK, maakondad), Statistikaameti rahvastikuandmed, PostgreSQL, dbt transformatsioonid, Airflow orkestreerimine ja Superseti näidikulaud.
+
+Äriregistri avaandmed uuenevad igapäevaselt; Statistikaameti andmed kord kuus.
 
 ## Olulised lingid
-Projekti kirjeldus: [Moodle](https://moodle.ut.ee/mod/data/view.php?d=1231&advanced=0&paging&filter=1&page=0&rid=19075)
-Teams Koosolekulink: [T 19.05.2026 kell 18:00](https://teams.microsoft.com/meet/380111006617570?p=8IYORzSl4Yk78naD59)
+
+- Projekti kirjeldus: [Moodle](https://moodle.ut.ee/mod/data/view.php?d=1231&advanced=0&paging&filter=1&page=0&rid=19075)
 
 ## Äriküsimus
 
 Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?
 
-Näidikulaud kuvab (.. siia KPI-d ja viited graafikutele?):
+Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
-- ...;
-- ...
+## Nõuete täitmine
 
-## Kuidas projekt täidab nõuded
-
-| Nõue | Kuidas see näidis seda täidab |
+| Nõue | Kuidas projekt seda täidab |
 |---|---|
-| Selge äriküsimus | Ilma sobivus väliste tegevuste planeerimiseks valitud Eesti asulates. |
-| Ajas muutuv andmeallikas | Open-Meteo ilmaennustus muutub ajas, kui prognoosi uuendatakse. |
-| Automatiseeritud sissevõtt | `scheduler` konteiner käivitab töövoo croni ajakava järgi. Käsitsi saab sama teha käsuga `scripts/run_pipeline.py ingest`. |
-| Vähemalt üks transformatsioon | `scripts/01_transform.sql` loob `staging` andmetest `mart` kihi tabelid, tunniskoorid ja 3-tunnised ajaaknad. |
-| Staatiline dimensioon | `scripts/00_seed_dimensions.sql` täidab `mart.dim_location` tabeli asulate püsivate tunnustega. |
-| Andmekvaliteedi testid | `scripts/02_quality_tests.sql` käivitab andmete ja skooride kontrollid. |
-| Näidikulaud | Streamliti rakendus näitab parimaid ajaaknaid, sobivuse kalendrit ja ilmategurite ajatelgi. |
-| Saladused `.env` failis | Ühenduse seaded tulevad `.env` failist. Repos on ainult `.env.example`. |
-| README | See fail kirjeldab äriküsimust, arhitektuuri ja käivitamist. |
+| Selge äriküsimus | EMTAK ja maakondade kaupa uute ettevõtete ning ettevõtlikkuse analüüs. |
+| Ajas muutuv andmeallikas | Äriregistri igapäevased väljavõtted; Statistikaameti kuine uuendus. |
+| Automatiseeritud sissevõtt | Airflow DAG-id (`airflow/dags/`). |
+| Transformatsioon | dbt mudelid (`dbt_project/rik_stat_dbt/`): staging → intermediate → marts. |
+| Staatiline dimensioon | EMTAK CSV-d, `dbt seed` (maakonnad), dimensioonivaated. |
+| Andmekvaliteedi testid | `dbt test` (DAG-ide lõpus). |
+| Näidikulaud | Superset (automaatne import `superset/dashboards/` zipist käivitamisel). |
+| Saladused | `.env` (repos ainult `.env.example`). |
 
 ## Arhitektuur
 
 ```mermaid
 flowchart LR
-    I[Staatiline asukohtade dimensioon] --> B[Python ingest]
-    A[Open-Meteo API] --> B[Python ingest]
+    A[Äriregistri API] --> B[Python laadimisskriptid]
+    S[Statistikaameti API] --> B
+    F[EMTAK CSV] --> B
     B --> C[(PostgreSQL staging)]
-    C --> D[SQL transformatsioon]
-    D --> E[(PostgreSQL mart)]
-    E --> F[Streamlit näidikulaud]
-    E --> G[Andmekvaliteedi testid]
-    H[Cron scheduler] --> B
+    C --> D[dbt]
+    D --> E[(intermediate / marts)]
+    E --> G[Superset]
+    H[Airflow] --> B
+    H --> D
 ```
 
-Andmekihid:
-
-- `staging` hoiab API-st saadud tunnipõhist lähtekuju;
-- `mart` hoiab staatilist asukohadimensiooni, ilmaennustuse fakti, tunniskoore, ajaaknaid ja päevast koondit;
-- `quality` hoiab andmekvaliteedi testide tulemusi.
-
-Asukohad on eraldi dimensioonitabelis `mart.dim_location`. Faktitabelites hoitakse ajas muutuvat ilmaennustust ja viidatakse asukohale võtmega `location_id`. See teeb nähtavaks dimensionaalse modelleerimise põhimõtte: püsivad kirjeldavad tunnused on dimensioonis, mõõdetavad või ajas muutuvad väärtused on faktides.
+Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
 ## Eeldused
 
-Sammud tehakse hosti terminalis ehk selles terminalis, kus saad kasutada `docker compose` käsku.
-
-Vaja on:
-
-- Docker Desktop või muu Docker Compose keskkond;
-- ligipääs internetile, et Open-Meteo API-st andmeid lugeda;
-- vaba port `55432` PostgreSQL-i jaoks ja `8501` näidikulaua jaoks.
-
-Kui port on hõivatud, muuda `.env` failis väärtusi `DB_PORT_HOST` või `DASHBOARD_PORT_HOST`.
+- Docker Desktop (või muu keskkond, kus töötab `docker compose`)
+- Internet (RIK ja Statistikaameti API)
+- Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8081`, Superset `8088`, dbt docs `18080`)
 
 ## Käivitamine
 
-Mine projekti kausta:
-
 ```bash
 cd andmeinseneride-projekt
-```
-
-Loo `.env` fail. See fail sisaldab kohaliku arenduskeskkonna seadeid ja seda ei laadita GitHubi.
-
-```bash
 cp .env.example .env
-```
-
-# Käivita teenused. Scheduler ehk ajastaja teeb esimese laadimise käivitumisel  ise, sest `.env.example` failis on `RUN_ON_STARTUP=true`.
-
-```bash
+# täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
 docker compose up -d --build
+docker compose ps
 ```
 
-Kui sul oli sama projekt vanema skeemiga juba käivitatud, kustuta enne vana andmebaasimaht:
+Kui vana stacki skeem või maht segab (tühi algus):
 
 ```bash
 docker compose down -v
 docker compose up -d --build
 ```
 
-## Airflow orkestreerimine
+Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
 
-Airflow on kaasatud [`compose.yml`](compose.yml) failis (PostgreSQL, `pipeline`, Superset ja Airflow ühes stackis).
+### Teenused
 
-### Eeldused
+| Teenus | URL / ligipääs |
+|---|---|
+| Airflow UI | http://localhost:8081 — kasutaja/parool `.env`-ist (`_AIRFLOW_WWW_USER_*`, vaikimisi `airflow` / `airflow`) |
+| Superset | http://localhost:8088 — admin `.env`-ist (`SUPERSET_ADMIN_*`) |
+| PostgreSQL (analüütika) | `localhost:${DB_PORT_HOST:-55432}` — `POSTGRES_*` |
+| dbt dokumentatsioon | http://localhost:18080 (vt allpool) |
 
-- `.env` fail on loodud (`cp .env.example .env`) ja sisaldab muu hulgas `AIRFLOW_*` ja `SUPERSET_*` muutujaid.
-- Docker Desktop on käivitatud.
-- Port **8080** (Airflow UI) ja **8088** (Superset) on vabad.
+### Airflow DAG-id
 
-### Käivita kogu stack
-
-Projekti kaustas:
-
-```bash
-docker compose up -d --build
-```
-
-Kontrolli olekut:
-
-```bash
-docker compose ps
-```
-
-Esimene käivitus võtab mõne minuti (Airflow `airflow-init` migratsioon ja pakettide paigaldus).
-
-### Airflow UI
-
-- Aadress: [http://localhost:8081](http://localhost:8081)
-- Vaikimisi kasutaja: `airflow` / `airflow` (muutujad `_AIRFLOW_WWW_USER_*` `.env` failis)
-
-### DAG-id ja esmane käivitus
+DAG-id on vaikimisi **pausil** — ava UI, **unpause**, seejärel käivita bootstrap.
 
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
-| `andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging, `dbt seed`, `dbt deps`, dimensioonivaated |
-| `ariregister_paevane` | iga päev 03:00 | Äriregistri andmed → dbt staging → intermediate → marts → test |
-| `rahvastik_kuine` | iga kuu 1. kuupäev 04:00 | Rahvastik → dbt staging → intermediate → marts → test |
+| `andmestiku_esmane_taitmine` | käsitsi | EMTAK → staging, `dbt deps`, `dbt seed`, dimensioonivaated |
+| `rahvastik_kuine` | iga kuu, 1. kp 04:00 | Rahvastik → dbt staging → intermediate → marts → test |
+| `ariregister_paevane` | iga kuu, 1. kp 03:00 | Äriregistri üldandmed → dbt kihid → test |
+| `ariregister_incremental_daily` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
 
-**dbt muudatused ilma Airflow muutmata:** `./dbt_project` on volume-mountitud Airflow konteinerisse. Mudelite valik toimub [`selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml) kaudu (`staging_rik`, `layer_intermediate`, `layer_marts`). Uue `.sql` faili lisamisel `models/marts/` alla piisab DAG-i uuesti triggerdamisest.
+**Esmane käivitus pärast kloonimist:**
 
-Arenduses saad dbt-d käsitsi testida pipeline konteineris:
+1. **Trigger** `andmestiku_esmane_taitmine` (üks kord).
+2. **Trigger** `rahvastik_kuine`.
+3. **Trigger** `ariregister_paevane` (või oota ajakava).
+4. Jäta `ariregister_incremental_daily` unpause’itud igapäevaseks täienduseks.
 
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
-```
+Mudelite valik: [`dbt_project/rik_stat_dbt/selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml). Uue `.sql` faili lisamisel `models/marts/` piisab DAG-i uuesti triggerdamisest.
 
-Alternatiivselt on olemas eraldiseisev `dbt` teenus (image `Dockerfile.dbt`), mis on mõeldud käsitsi tööks ja diagnostikaks:
+`./dbt_project` on mountitud Airflow konteineritesse; DAG-e ei pea dbt-mudelite pärast muutma.
 
-```bash
-# Kontrolli dbt ühendust andmebaasiga
-docker compose exec dbt dbt debug
-
-# Käivita kogu dbt build käsitsi / diagnostikaks
-docker compose exec dbt dbt build
-```
-
-Pärast esimest `docker compose up`:
-
-1. Ava Airflow UI, **unpause** vajalikud DAG-id.
-2. **Trigger** `andmestiku_esmane_taitmine` (üks kord pärast kloonimist).
-3. **Trigger** `rahvastik_kuine` (rahvastikuandmed marts-tabelite jaoks).
-4. **Trigger** `ariregister_paevane` (või oota igapäevast ajakava).
-
-DAG-id on vaikimisi pausil (`DAGS_ARE_PAUSED_AT_CREATION=true`).
-
-### Logid ja peatamine
-
-Airflow scheduleri logid:
+## Logid ja peatamine
 
 ```bash
 docker compose logs -f airflow-scheduler
+docker compose logs superset-init   # Superseti esmane seadistus / dashboard import
+docker compose down                 # peatab teenused
+docker compose down -v              # + kustutab mahud (PostgreSQL, Airflow meta, Superset)
 ```
 
-Peata ainult Airflow teenused (db, pipeline ja Superset jäävad tööle):
+Ainult Airflow peatamiseks (ülejäänud jääb tööle):
 
 ```bash
 docker compose stop airflow-apiserver airflow-scheduler airflow-dag-processor airflow-db
 ```
 
-Peata kõik teenused:
+Windows Git Bash: lisa `MSYS_NO_PATHCONV=1` eesliiteks, kui `docker exec` teekonda moonutab.
+
+## Arendus ja diagnostika (valikuline)
+
+Töövoog jookseb Airflow kaudu. Käsitsi testimiseks saab sama skripte käivitada `pipeline` konteineris:
 
 ```bash
-docker compose down
+MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/03_load_emtak.py
+MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/01_load_statistikaamet.py
+MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/02_01_load_ariregister_yldandmed.py
+MSYS_NO_PATHCONV=1 docker compose exec pipeline python scripts/04_load_ariregister_incremental.py
 ```
 
-Kustuta andmed (PostgreSQL + Airflow metaandmed):
+dbt ühe DAG-etapi asemel (`pipeline` või `dbt` teenus):
 
 ```bash
-docker compose down -v
-```
-
-Windows Git Bash-is kasuta `MSYS_NO_PATHCONV=1` eesliidet, kui `docker exec` teekonda moonutab.
-
-# meie projektis: Käivita skriptid (pipeline konteiner — käsitsi arendus):
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/01_load_statistikaamet.py
-```
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_01_load_ariregister_yldandmed.py
-```
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/02_02_load_ariregister_muudatused.py
-```
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python "/app/scripts/02_03_load_ariregister_registrikaart(äkki).py"
-```
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/03_load_emtak.py
-```
-
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline python /app/scripts/04_load_geo.py
-```
-
-dbt käivitamiseks - seda oli vaja enne seedi
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt run"
-```
-# dbt-s on olemas seeds - seda saab käivitada eraldi
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed"
-```
-# või koos 
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed && dbt run"
-```
-# kui muuta seed faili sisu, siis uuendada seed põhjalikult:
-```bash
-MSYS_NO_PATHCONV=1 docker exec -it andmeinseneeria-pipeline bash -c "cd /app/dbt_project/rik_stat_dbt && dbt seed --full-refresh"
-```
-
-
-# Superset Ui on aadressil: http://localhost:8088 ja sinna saab logida nagu env failis kirjas (a-n, a-n)
-
-
-# Superset, andmeühenduse loomine
-Mine Settings → Database Connections → + Database
-Vali andmebaasi tüüp: PostgreSQL
-Täida ühenduse andmed:
-Host: db
-Port: 5432
-Database name: väärtus .env-st (POSTGRES_DB)
-Username / Password: väärtused .env-st (POSTGRES_USER / POSTGRES_PASSWORD)
-Klõpsa Connect, peaks näitama „Database connected"
-Vajuta Finish
-
-# Supersetiga töö: Mine ülevalt SQL/SQLLab
-
-Kui tahad töövoogu käsitsi uuesti käivitada, kasuta järgmist käsku:
-
-```bash
-docker compose exec pipeline python scripts/run_pipeline.py run-all
-```
-
-Oodatav tulemus: terminalis on näha, et aktiivsete asukohtade kohta laaditi tunniread, transformatsioon lõppes ning kõik kvaliteeditestid said oleku `passed`.
-
-Kontrolli tulemusi käsureal:
-
-```bash
-docker compose exec pipeline python scripts/run_pipeline.py check
-```
-
-Ava näidikulaud brauseris:
-
-```text
-http://localhost:8501
-```
-
-Näidikulaud värskendab andmevaadet vaikimisi iga 15 sekundi järel. Seda saab muuta `.env` faili väärtusega `DASHBOARD_AUTOREFRESH_SECONDS`. Väärtus `0` lülitab automaatse värskenduse välja. Värskendus ei tee brauseri täislaadimist, seega jäävad asukohafiltrid alles.
-
-Scheduleri logisid saad vaadata nii:
-
-```bash
-docker compose logs -f scheduler
-```
-
-# Dbt dokumentatsioon (veebiliides)
-
-dbt oskab genereerida brauseris vaadatava dokumentatsiooni koos mudelite kirjelduste ja päritolugraafiga (lineage). dbt **ei ole** hostis installitud — see jookseb `dbt` teenuse konteineris (`andmeinseneeria-dbt`). Seega ära käivita käske otse Windowsis, vaid konteineris läbi `docker compose exec`.
-
-Konteineri sees kuulab dbt pordil `8080`, mille [`compose.yml`](compose.yml) mapib hosti pordile `18080` (`"18080:8080"`). Seetõttu peab `dbt docs serve` kasutama konteineri sees pordi `8080` ja `--host 0.0.0.0`, et host selleni läbi pordimapingu pääseks.
-
-Kui konteinerid on püsti, käivita projekti kaustast:
-
-1. Veendu, et `dbt` teenus töötab:
-
-```bash
-docker compose up -d dbt
-```
-
-2. Genereeri dokumentatsioon (kogub mudelitest metaandmed):
-
-```bash
-docker compose exec dbt dbt docs generate
-```
-
-3. Käivita kohalik veebiserver (konteineri port `8080`):
-
-```bash
-docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0 --no-browser
-```
-
-4. Ava brauseris: [http://localhost:18080](http://localhost:18080)
-
-Serveri peatamiseks vajuta terminalis `Ctrl+C`.
-
-Käsitsi diagnostikaks ja ühenduse kontrolliks saab sama teenust kasutada ka nii:
-
-```bash
-# Kontrolli dbt ühendust andmebaasiga
+docker compose exec pipeline bash -c "cd dbt_project/rik_stat_dbt && dbt run --selector layer_marts"
 docker compose exec dbt dbt debug
-
-# Käivita kogu dbt build käsitsi
 docker compose exec dbt dbt build
 ```
 
+### dbt dokumentatsioon (veeb)
 
-## Korduskäivitused ja vanad andmed
+```bash
+docker compose up -d dbt
+docker compose exec dbt dbt docs generate
+docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0 --no-browser
+```
 
-Iga laadimine saab uue `run_id`. Vanad laadimised jäävad alles tabelitesse `staging.pipeline_runs` ja `staging.weather_hourly_raw`, kuni käivitad käsu `reset` või kustutad andmebaasi mahu käsuga `docker compose down -v`.
+Ava http://localhost:18080 — peatamiseks `Ctrl+C` exec-sessioonis.
 
-Transformatsioon ehitab ajas muutuvad `mart` tabelid uuesti kõigi alles olevate staging ridade põhjal. Staatiline `mart.dim_location` jääb alles ja seda värskendab `scripts/00_seed_dimensions.sql`. Näidikulaud kasutab `latest_*` vaateid, seega kuvatakse otsuste tegemiseks viimase eduka laadimise prognoos. Vanemad laadimised jäävad andmebaasi alles hilisemaks võrdluseks või auditeerimiseks.
+### Superset ja analüütika-andmebaas
 
-## Töövoo käsud
+Kui automaatne dashboardi import ebaõnnestub (`superset-init` logid), lisa ühendus käsitsi: **Settings → Database Connections → PostgreSQL**
 
-Kõik käsud käivitatakse hosti terminalis näidisprojekti kaustast.
-
-| Käsk | Mida teeb |
+| Väli | Väärtus |
 |---|---|
-| `docker compose exec pipeline python scripts/run_pipeline.py ingest` | Pärib API-st ilmaandmed ja salvestab need `staging` kihti. |
-| `docker compose exec pipeline python scripts/run_pipeline.py transform` | Ehitab `mart` kihi tabelid. |
-| `docker compose exec pipeline python scripts/run_pipeline.py test` | Käivitab andmekvaliteedi testid. |
-| `docker compose exec pipeline python scripts/run_pipeline.py check` | Näitab viimase laadimise, parimate ajaakende ja testide ülevaadet. |
-| `docker compose exec pipeline python scripts/run_pipeline.py run-all` | Käivitab kogu töövoo õiges järjekorras. |
-| `docker compose exec pipeline python scripts/run_pipeline.py reset` | Tühjendab andmetabelid. |
+| Host | `db` |
+| Port | `5432` |
+| Database | `POSTGRES_DB` |
+| User / Password | `POSTGRES_USER` / `POSTGRES_PASSWORD` |
 
-Automaatne käivitus kasutab `.env` faili muutujat `PIPELINE_CRON`. Vaikimisi väärtus `"0 * * * *"` tähendab, et töövoog käivitub iga tunni alguses. Croni vorming on `minut tund kuupaev kuu nadalapaev`.
+## Andmeallikad
 
-## Andmeallikas
-
-Asukohtade staatiline dimensioon on failis `scripts/00_seed_dimensions.sql`. Näidises on aktiivsed asukohad Tallinn, Tartu, Pärnu, Narva, Rakvere, Otepää, Kohtla-Järve, Viljandi, Võru, Kuressaare, Haapsalu, Valga, Paide ja Jõhvi.
-
-Põhiandmeallikas on [Open-Meteo Forecast API](https://open-meteo.com/en/docs).
-
-Näidis kasutab tunnipõhiseid välju:
-
-- `temperature_2m` ehk õhutemperatuur 2 meetri kõrgusel;
-- `precipitation` ehk sademed millimeetrites;
-- `precipitation_probability` ehk sademete tõenäosus protsentides;
-- `is_day` ehk kas prognoositund on päevavalges või mitte;
-- `wind_speed_10m` ehk tuulekiirus 10 meetri kõrgusel. Open-Meteo vaikimisi ühik on `km/h`, aga näidisprojekt küsib selle välja parameetriga `wind_speed_unit=ms`, et andmebaasis ja näidikulaual oleks väärtus ühikus `m/s`.
-
-API ei vaja selle õppeprojekti jaoks võtit. Kui kasutad sama allikat oma projektis, lisa README-sse andmeallika viide ja järgi Open-Meteo kasutustingimusi.
-
-## Sobivuse skoor
-
-Projekt arvutab iga prognoositunni kohta sobivuse skoori vahemikus 0 kuni 100.
-
-| Tegur | Maksimumpunktid | Hea näide |
-|---|---:|---|
-| Temperatuur | 30 | 16 kuni 24 kraadi |
-| Sademed ja sademete tõenäosus | 35 | 0 mm ja kuni 20% tõenäosus |
-| Tuul | 25 | kuni 4 m/s |
-| Päevavalgus | 10 | `is_day = 1` |
-
-Tunniskooridest ehitatakse 3-tunnised libisevad ajaaknad. Näidikulaud järjestab need keskmise skoori järgi ja näitab ka peamist põhjust, miks aken sobib või ei sobi.
-
-## Andmekvaliteedi testid
-
-Projekt kontrollib muu hulgas, et:
-
-- asukohtade dimensioonis on aktiivseid ridu;
-- aktiivsetel asukohtadel on koordinaadid;
-- viimane edukas laadimine sisaldab andmeid;
-- viimasel edukal laadimisel on kõik aktiivsed asukohad olemas;
-- prognoosi aeg ei puudu;
-- sama käivituse, asukoha ja tunni kohta ei teki duplikaate;
-- temperatuur, sademed ja tuulekiirus jäävad mõistlikesse piiridesse;
-- sademete tõenäosus jääb vahemikku 0 kuni 100;
-- päevavalguse tunnus on 0 või 1;
-- sobivuse skoor jääb vahemikku 0 kuni 100;
-- päevane koondtabel sisaldab näidikulaua ridu;
-- ajaakende tabel sisaldab välitegevuste soovitusi.
-
-Testide tulemused salvestatakse tabelisse `quality.test_results` ja on näha ka näidikulaual.
-
-## Failid
-
-| Fail või kaust | Roll |
+| Allikas | Kasutus |
 |---|---|
-| `compose.yml` | Käivitab PostgreSQL-i, `pipeline`, Superseti ja Airflow 3 stacki. |
-| `airflow/dags/` | Airflow DAG-id (`andmestiku_esmane_taitmine`, `ariregister_paevane`, `rahvastik_kuine`). |
-| `.env.example` | Näitab, milliseid keskkonnamuutujaid projekt vajab. |
-| `init/01_create_objects.sql` | Loob andmebaasi skeemid ja tabelid. |
-| `scripts/00_seed_dimensions.sql` | Täidab staatilise asukohadimensiooni. |
-| `scripts/run_pipeline.py` | Orkestreerib API-päringu, laadimise, transformatsiooni ja testid. |
-| `scripts/start_cron.sh` | Käivitab scheduler konteineris croni ja töövoo ajastatud jooksutamise. |
-| `scripts/01_transform.sql` | Ehitab `mart` kihi tabelid, skoorid, ajaaknad ja vaated. |
-| `scripts/02_quality_tests.sql` | Käivitab andmekvaliteedi kontrollid. |
-| `scripts/03_check_results.sql` | Sisaldab käsitsi kontrollimiseks sobivaid SQL-päringuid. |
-| `dashboard/app.py` | Streamliti näidikulaud. |
-| `docs/arhitektuur.md` | Näidis esimeseks projektinädalaks. |
-| `docs/progress.md` | Näidis teise projektinädala edenemisraportiks. |
+| [Äriregistri avaandmed](https://avaandmed.ariregister.rik.ee/) | Põhivoog (`ARIREGISTER_*` `.env`-is) |
+| [Statistikaameti PxWeb API](https://andmed.stat.ee/) | Rahvastik (`STAT_API_URL`) |
+| `data/EMTAK_*.csv` | EMTAK dimensioonid |
 
-## Kuidas seda enda projektiks muuta
+## Projekti struktuur
 
-Baastaseme jaoks piisab, kui muudad järgnevat:
-
-1. vali enda äriküsimus;
-2. muuda `scripts/00_seed_dimensions.sql` failis staatilise dimensiooni ridu;
-3. vaheta API või lisa teine lihtne allikas;
-4. muuda `mart.hourly_weather_score` ja `mart.outdoor_activity_windows` loogikat oma mõõdikute järgi;
-5. lisa vähemalt 3 oma andmete jaoks sisukat kvaliteeditesti;
-6. kohanda näidikulaud oma mõõdikutele.
-
-Edasijõudnute jaoks sobivad laiendused:
-
-- vii transformatsioonid dbt projekti;
-- lisa Airflow DAG, mis käivitab töövoo ajakava järgi;
-- asenda Streamlit Supersetiga;
-- lisa andmekataloogi kirjeldused ja andmete pärinevuse vaade;
-- lisa inkrementaalne laadimine, mis töötleb ainult uue prognoosisnapshot'i.
+| Kaust / fail | Roll |
+|---|---|
+| `compose.yml` | PostgreSQL, pipeline, dbt, Superset, Airflow |
+| `airflow/dags/` | Orkestreerimine |
+| `scripts/` | Python laadimisskriptid |
+| `dbt_project/rik_stat_dbt/` | Transformatsioonid ja testid |
+| `superset/` | Konfiguratsioon ja dashboardi eksport |
+| `data/` | EMTAK CSV-failid |
+| `.env.example` | Keskkonnamuutujad |
+| `docs/arhitektuur.md` | Arhitektuur, mõõdikud, andmemudel |
 
 ## Koristamine
 
-Peata teenused:
-
 ```bash
 docker compose down
-```
-
-Peata teenused ja kustuta andmebaasi maht:
-
-```bash
 docker compose down -v
 ```
