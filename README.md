@@ -53,7 +53,7 @@ Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
 - Docker Desktop (või muu keskkond, kus töötab `docker compose`)
 - Internet (RIK ja Statistikaameti API)
-- Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8081`, Superset `8088`, dbt docs `18080`)
+- Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8080`, Superset `8088`, dbt docs `18080`)
 
 ## Käivitamine
 
@@ -78,7 +78,7 @@ Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
 
 | Teenus | URL / ligipääs |
 |---|---|
-| Airflow UI | http://localhost:8081 — kasutaja/parool `.env`-ist (`_AIRFLOW_WWW_USER_*`, vaikimisi `airflow` / `airflow`) |
+| Airflow UI | http://localhost:8080 — kasutaja/parool `.env`-ist (`_AIRFLOW_WWW_USER_*`, vaikimisi `airflow` / `airflow`) |
 | Superset | http://localhost:8088 — admin `.env`-ist (`SUPERSET_ADMIN_*`) |
 | PostgreSQL (analüütika) | `localhost:${DB_PORT_HOST:-55432}` — `POSTGRES_*` |
 | dbt dokumentatsioon | http://localhost:18080 (vt allpool) |
@@ -87,11 +87,16 @@ Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
 
 Import ja dbt on **eraldi DAG-id**: laadimisskriptid (`01_`–`04_`) ja transformatsioonid (`05_`). Failinimed `airflow/dags/` algavad järjekorranumbriga; `dag_id` ühtib failinimega.
 
-DAG-id on vaikimisi **pausil** — ava UI, **unpause**, seejärel käivita bootstrap.
+Pärast `docker compose up -d` käivitab **scheduler** automaatselt bootstrap-skripti ([`scripts/airflow_startup_bootstrap.py`](scripts/airflow_startup_bootstrap.py)):
+
+- **Unpause** `02`–`05` → käivituvad **ainult cron-ajakava** järgi.
+- **Trigger** `01_andmestiku_esmane_taitmine` üks kord, kui seda pole varem edukalt jooksutatud.
+
+Keela: `AIRFLOW_AUTO_BOOTSTRAP=false` `.env`-is.
 
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
-| `01_andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging |
+| `01_andmestiku_esmane_taitmine` | käsitsi (auto-trigger 1× esimesel käivitusel) | EMTAK CSV → staging |
 | `02_rahvastik_kuuine_laadimine` | iga kuu, 1. kp 04:00 | Statistikaameti rahvastik → staging |
 | `03_ariregister_kuuine_taielaadimine` | iga kuu, 1. kp 03:00 | Äriregistri täislaadimine + tingimuslik EMTAK/rahvastik |
 | `04_ariregister_igapaevane_increment` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
@@ -99,13 +104,7 @@ DAG-id on vaikimisi **pausil** — ava UI, **unpause**, seejärel käivita boots
 
 **1. kuupäeva järjekord:** 03:00 täislaadimine → 03:30 inkrement → 04:00 rahvastik → 05:00 dbt.
 
-**Esmane käivitus pärast kloonimist:**
-
-1. **Trigger** `01_andmestiku_esmane_taitmine` (üks kord).
-2. **Trigger** `02_rahvastik_kuuine_laadimine`.
-3. **Trigger** `03_ariregister_kuuine_taielaadimine` (või oota ajakava).
-4. **Unpause** `04_ariregister_igapaevane_increment` igapäevaseks täienduseks.
-5. **Trigger** või **unpause** `05_dbt_igapaevane` (transformatsioonid ja testid; ilma selleta puuduvad `intermediate` / `marts` kihid).
+**Esmane käivitus pärast kloonimist:** `01` käivitub automaatselt; `02`–`05` järgnevad **cronile** (vaata Airflow UI „Next run“). Kui vajad andmeid kohe kuu keskel, **trigger** käsitsi `02`, `03` ja/või `05`. Enne esimest `05` käivitust peavad import-DAG-id andmed stagingusse tooma.
 
 Mudelite valik: [`dbt_project/rik_stat_dbt/selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml). Uue `.sql` faili lisamisel `models/marts/` piisab `05_dbt_igapaevane` uuesti käivitamisest.
 
