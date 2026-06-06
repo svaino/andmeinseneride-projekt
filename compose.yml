@@ -98,6 +98,10 @@ services:
     working_dir: /app/dbt_project/rik_stat_dbt
     ports:
       - "18081:8081"
+    healthcheck:
+      test: ["CMD", "dbt","--version"]
+      interval: 30s
+      retries: 5
     tty: true
 
   pipeline:
@@ -122,6 +126,10 @@ services:
       - ./data:/app/data
       - ./dbt_project:/app/dbt_project
     working_dir: /app
+    healthcheck:
+      test: ["CMD", "python","--version"]
+      interval: 30s
+      retries: 3
     tty: true
 
   superset-db:
