@@ -58,18 +58,19 @@ Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
 ## Käivitamine
 
-### 1. Veendu, mis kaustas oled. Vajadusel liigu õigesse kausta
+### 1. Kontrolli asukohta
+Veendu, mis kaustas oled. Vajadusel liigu õigesse kausta
 ```bash
 cd andmeinseneride-projekt
 ```
 
-### 2. Kopeeri keskkonnamuutujad.  Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
+### 2. Kopeeri keskkonnamuutujad.  
 ```bash
 cp .env.example .env
 ```
-### 3. Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
+Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
 
-### 4. Käivita kõik teenused
+### 3. Käivita kõik teenused
 
 ```bash
 docker compose up -d --build
@@ -87,7 +88,7 @@ docker compose ps
 ```
 
 
-### 5. Andmete laadimine Airflowga (vt Teenused)
+### 4. Andmete laadimine Airflowga (vt Teenused)
 
 Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080 Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05. 
 
@@ -101,7 +102,7 @@ ja seejärel käivitada dbt seed ja mudelid:
 docker exec andmeinseneeria-dbt bash -c "dbt seed && dbt run"
 ```
 
-### 6. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
+### 5. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
 ```bash
 docker exec -it andmeinseneeria-superset bash scripts/import_dashboard.sh
 ```
