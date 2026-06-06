@@ -3,7 +3,6 @@
 
 SELECT
     reg_kood,
-    nimi AS ettevotte_nimi,
     oiguslik_vorm,
         case 
             when oiguslik_vorm in ('Osaühing','Usaldusühing', 'Aktsiaselts','Täisühing', 'Tulundusühistu') then '1_äriettevõtted'
@@ -11,7 +10,6 @@ SELECT
             else '3_Muud_jur_isikud'
         end as oiguslik_vorm_grupp,
     asutamise_kuupaev,
-    EXTRACT(YEAR FROM asutamise_kuupaev) as asutamise_aasta,
         n.aastaid,
         (CURRENT_DATE - INTERVAL '1 year' * (n.aastaid + 1))::date AS periood_alates,
         (CURRENT_DATE - INTERVAL '1 year' * n.aastaid - INTERVAL '1 day')::date AS periood_kuni,
