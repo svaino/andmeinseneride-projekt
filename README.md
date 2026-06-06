@@ -58,7 +58,7 @@ Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
 ## Käivitamine
 
-### 1. Veendu, mis kautsas oled. Vajadusel liigu õigesse kausta
+### 1. Veendu, mis kaustas oled. Vajadusel liigu õigesse kausta
 ```bash
 cd andmeinseneride-projekt
 ```
@@ -75,14 +75,13 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### Kui vana stacki skeem või maht segab (tühi algus):
+Kui vana stacki skeem või maht segab (tühi algus):
 
 ```bash
 docker compose down -v
 docker compose up -d --build
 ```
-
-### Kontrolli, kas teenused on käivitunud:
+Kontrolli, kas teenused on käivitunud:
 ```bash
 docker compose ps
 ```
@@ -90,23 +89,23 @@ docker compose ps
 
 ### 5. Andmete laadimine Airflowga (vt Teenused)
 
-### Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080 Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05. 
+Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080 Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05. 
 
 
-### 6. Alternatiivseks andmelaadimiseks võib käivitada terminalis
+Alternatiivseks andmelaadimiseks võib käivitada terminalis
 ```bash
 docker exec andmeinseneeria-pipeline bash scripts/run_data_import.sh 
 ```
-### ja seejärel käivitada dbt seed ja mudelid: 
+ja seejärel käivitada dbt seed ja mudelid: 
 ```bash
 docker exec andmeinseneeria-dbt bash -c "dbt seed && dbt run"
 ```
 
-### 7. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
+### 6. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
 ```bash
 docker exec -it andmeinseneeria-superset bash scripts/import_dashboard.sh
 ```
-### Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (st liikuv aasta). Filtrid mõjuvad graafikutel, millel see on loogiline ja võimalik.
+Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (st liikuv aasta). Filtrid mõjuvad graafikutel, millel see on loogiline ja võimalik.
 
 
 ## Teenused
