@@ -102,7 +102,9 @@ ja seejärel käivitada dbt seed ja mudelid:
 docker exec andmeinseneeria-dbt bash -c "dbt seed && dbt run"
 ```
 
-### 5. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
+### 5. Ava Superset 
+
+http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
 ```bash
 docker exec -it andmeinseneeria-superset bash scripts/import_dashboard.sh
 ```
