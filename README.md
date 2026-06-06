@@ -70,6 +70,13 @@ cp .env.example .env
 ```
 Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
 
+Genereeri turvaline SECRET_KEY Superseti jaoks
+Asenda .env failis SUPERSET_SECRET_KEY väärtus:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
 ### 3. Käivita kõik teenused
 
 ```bash
