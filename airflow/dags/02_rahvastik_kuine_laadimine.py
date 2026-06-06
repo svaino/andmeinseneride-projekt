@@ -6,7 +6,7 @@ from airflow.sdk import dag
 
 
 @dag(
-    dag_id="02_rahvastik_kuuine_laadimine",
+    dag_id="02_rahvastik_kuine_laadimine",
     schedule="0 4 1 * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
@@ -22,7 +22,7 @@ from airflow.sdk import dag
         "retry_delay": timedelta(minutes=5),
     },
 )
-def rahvastik_kuuine_laadimine():
+def rahvastik_kuine_laadimine():
     lae_rahvastik = BashOperator(
         task_id="lae_rahvastik",
         bash_command="python /opt/airflow/scripts/01_load_statistikaamet.py",
@@ -31,4 +31,4 @@ def rahvastik_kuuine_laadimine():
     lae_rahvastik
 
 
-rahvastik_kuuine_laadimine()
+rahvastik_kuine_laadimine()

@@ -73,6 +73,8 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
+    restart: always
+
 
   dbt:
     build:
@@ -95,7 +97,7 @@ services:
       - ./dbt_project:/app/dbt_project
     working_dir: /app/dbt_project/rik_stat_dbt
     ports:
-      - "18080:8080"
+      - "18081:8081"
     tty: true
 
   pipeline:
@@ -167,7 +169,7 @@ services:
 #          echo "INIT DONE - starting import" &&
 #          find /app/dashboards -name '*.zip' | head -1 | xargs -I {} sh -c 'cp {} /tmp/dashboard.zip && cd /tmp && unzip -o dashboard.zip && rm -rf databases && zip -r dashboard_clean.zip . -x "*.zip" && superset import-dashboards --path /tmp/dashboard_clean.zip --username ${SUPERSET_ADMIN_USER}' &&
 #          echo "IMPORT DONE"
-
+    restart: "no"
 
   superset:
     build:
@@ -183,6 +185,7 @@ services:
       - ./superset/superset_config.py:/app/superset_config.py
       - superset-home:/app/superset_home
       - ./superset/dashboards:/app/dashboards
+      - ./scripts:/app/scripts
     environment:
       SUPERSET_CONFIG_PATH: /app/superset_config.py
       DATABASE_URI: "postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@superset-db:5432/${SUPERSET_DB_NAME}"
@@ -291,6 +294,7 @@ services:
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
+    restart: "no"
 
 
 volumes:

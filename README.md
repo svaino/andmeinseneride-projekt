@@ -12,10 +12,11 @@ Otsast lõpuni andmeinseneeria töövoog: Äriregistri avaandmete API-st igapäe
 
 Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
 
+Selgitused: 
 Äriettevõteteks loeme kasumit taotlevaid ettevõtteid (AS, OÜ, UÜ, TÜ, TÜH ja FIE).
 KPI-na defineerime ettevõtlikkust - uute äriettevõtte arvu tuhande tööealise (20-74a) elaniku kohta.
-Ajaperioodina kasutame libisevat aastat (ingl. k. rolling year) - pidevalt muutuv aastane periood, mis võimaldab andmeid võrrelda teatud määratud kuupäevast alates sama kuupäevani aasta tagasi (nt. 4. juuni 2025 - 3. juuni 2026)
-Rahvastikustatistikat arvestame kalendriaasta alguse seisuga (1. jaanuar).
+Ajaperioodina kasutame libisevat aastat (ingl. k. rolling year) - pidevalt muutuv aastane periood, mis võimaldab andmeid võrrelda teatud määratud kuupäevast alates sama kuupäevani aasta tagasi (nt. laadides andmeid 4.juunil 2026 on aastaks 2026 periood: 4. juuni 2025 - 3. juuni 2026 jne)
+Rahvastikustatistikat arvestame kalendriaasta alguse seisuga (1. jaanuar). Kuna aasta lõikes on maakondade rahvastiku kõikumised ca 1%, siis ei arvuta aastakeskimisi.  
 
 Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
@@ -23,11 +24,11 @@ Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektu
 
 | Nõue | Kuidas projekt seda täidab |
 |---|---|
-| Selge äriküsimus | EMTAK ja maakondade kaupa uute ettevõtete ning ettevõtlikkuse analüüs. |
+| Selge äriküsimus | Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud? |
 | Ajas muutuv andmeallikas | Äriregistri igapäevased väljavõtted; Statistikaameti kuine uuendus. |
 | Automatiseeritud sissevõtt | Airflow import-DAG-id (`01_`–`04_` failid `airflow/dags/`). |
 | Transformatsioon | dbt mudelid (`dbt_project/rik_stat_dbt/`): staging → intermediate → marts; igapäevane DAG `05_dbt_igapaevane`. |
-| Staatiline dimensioon | EMTAK CSV-d → staging; maakondade seemned (`dbt seed` → `staging.dim_maakonnad`). |
+| Staatiline dimensioon | EMTAK CSV-d → staging; maakondade ISO koodid, regioonid (`dbt seed` → `staging.dim_maakonnad`). |
 | Andmekvaliteedi testid | `dbt test` (`05_dbt_igapaevane` lõpus). |
 | Näidikulaud | Superset (automaatne import `superset/dashboards/` zipist käivitamisel). |
 | Saladused | `.env` (repos ainult `.env.example`). |
@@ -53,26 +54,56 @@ Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
 - Docker Desktop (või muu keskkond, kus töötab `docker compose`)
 - Internet (RIK ja Statistikaameti API)
-- Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8080`, Superset `8088`, dbt docs `18080`)
+- Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8080`, Superset `8088`, dbt docs `18081`)
 
 ## Käivitamine
 
+# 1. Veendu, mis kautsas oled. Vajadusel liigu õigesse kausta
 ```bash
 cd andmeinseneride-projekt
-cp .env.example .env
-# täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
-docker compose up -d --build
-docker compose ps
 ```
 
-Kui vana stacki skeem või maht segab (tühi algus):
+# 2. Kopeeri keskkonnamuutujad.  Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
+```bash
+cp .env.example .env
+```
+# 3. Täida .env (POSTGRES_*, ARIREGISTER_*, SUPERSET_*, vajadusel AIRFLOW_UID)
+
+# 4. Käivita kõik teenused
+
+```bash
+docker compose up -d --build
+```
+
+# Kui vana stacki skeem või maht segab (tühi algus):
 
 ```bash
 docker compose down -v
 docker compose up -d --build
 ```
 
-Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
+# Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
+
+# 5. Andmete laadimine Airflowga (vt Teenused)
+
+# Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080 Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05. 
+
+
+# 6. Alternatiivseks andmelaadimiseks võib käivitada terminalis
+```bash
+docker exec andmeinseneeria-pipeline bash scripts/run_data_import.sh 
+```
+# ja seejärel käivitada dbt seed ja mudelid: 
+```bash
+docker exec andmeinseneeria-dbt bash -c "dbt seed && dbt run"
+```
+
+# 7. Ava Superset http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
+```bash
+docker exec -it andmeinseneeria-superset bash scripts/import_dashboard.sh
+```
+# Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (st liikuv aasta). Filtrid mõjuvad graafikutel, millel see on loogiline ja võimalik.
+
 
 ### Teenused
 
@@ -81,7 +112,7 @@ Esimene käivitus võtab mõne minuti (`airflow-init`, `superset-init`).
 | Airflow UI | http://localhost:8080 — kasutaja/parool `.env`-ist (`_AIRFLOW_WWW_USER_*`, vaikimisi `airflow` / `airflow`) |
 | Superset | http://localhost:8088 — admin `.env`-ist (`SUPERSET_ADMIN_*`) |
 | PostgreSQL (analüütika) | `localhost:${DB_PORT_HOST:-55432}` — `POSTGRES_*` |
-| dbt dokumentatsioon | http://localhost:18080 (vt allpool) |
+| dbt dokumentatsioon | http://localhost:18081 (vt allpool) |
 
 ### Airflow DAG-id
 
@@ -97,8 +128,8 @@ Keela: `AIRFLOW_AUTO_BOOTSTRAP=false` `.env`-is.
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
 | `01_andmestiku_esmane_taitmine` | käsitsi (auto-trigger 1× esimesel käivitusel) | EMTAK CSV → staging |
-| `02_rahvastik_kuuine_laadimine` | iga kuu, 1. kp 04:00 | Statistikaameti rahvastik → staging |
-| `03_ariregister_kuuine_taielaadimine` | iga kuu, 1. kp 03:00 | Äriregistri täislaadimine + tingimuslik EMTAK/rahvastik |
+| `02_rahvastik_kuine_laadimine` | iga kuu, 1. kp 04:00 | Statistikaameti rahvastik → staging |
+| `03_ariregister_kuine_taislaadimine` | iga kuu, 1. kp 03:00 | Äriregistri täislaadimine + tingimuslik EMTAK/rahvastik |
 | `04_ariregister_igapaevane_increment` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
 | `05_dbt_igapaevane` | iga päev 05:00 | `dbt deps` → seed → staging → intermediate → marts → test |
 
@@ -166,10 +197,10 @@ docker compose exec dbt dbt debug
 ```bash
 docker compose up -d dbt
 docker compose exec dbt dbt docs generate
-docker compose exec dbt dbt docs serve --port 8080 --host 0.0.0.0 --no-browser
+docker compose exec dbt dbt docs serve --port 8081 --host 0.0.0.0 --no-browser
 ```
 
-Ava http://localhost:18080 — peatamiseks `Ctrl+C` exec-sessioonis.
+Ava http://localhost:18081 — peatamiseks `Ctrl+C` exec-sessioonis.
 
 ### Superset ja analüütika-andmebaas
 
