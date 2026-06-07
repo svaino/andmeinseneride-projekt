@@ -129,18 +129,11 @@ Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (s
 
 ### Airflow DAG-id
 
-Import ja dbt on **eraldi DAG-id**: laadimisskriptid (`01_`–`04_`) ja transformatsioonid (`05_`). Failinimed `airflow/dags/` algavad järjekorranumbriga; `dag_id` ühtib failinimega.
-
-Pärast `docker compose up -d` käivitab **scheduler** automaatselt bootstrap-skripti ([`scripts/airflow_startup_bootstrap.py`](scripts/airflow_startup_bootstrap.py)):
-
-- **Unpause** `02`–`05` → käivituvad **ainult cron-ajakava** järgi.
-- **Trigger** `01_andmestiku_esmane_taitmine` üks kord, kui seda pole varem edukalt jooksutatud.
-
-Keela: `AIRFLOW_AUTO_BOOTSTRAP=false` `.env`-is.
+Import ja dbt on **eraldi DAG-id**: laadimisskriptid (`01_`–`04_`) ja transformatsioonid (`05_`). Failinimed `airflow/dags/` algavad järjekorranumbriga; `dag_id` ühtib failinimega. DAG-id on vaikimisi **paused** — unpause ja käivita Airflow UI-st või CLI-st.
 
 | DAG | Ajakava | Mida teeb |
 |---|---|---|
-| `01_andmestiku_esmane_taitmine` | käsitsi (auto-trigger 1× esimesel käivitusel) | EMTAK CSV → staging |
+| `01_andmestiku_esmane_taitmine` | käsitsi | EMTAK CSV → staging |
 | `02_rahvastik_kuine_laadimine` | iga kuu, 1. kp 04:00 | Statistikaameti rahvastik → staging |
 | `03_ariregister_kuine_taislaadimine` | iga kuu, 1. kp 03:00 | Äriregistri täislaadimine + tingimuslik EMTAK/rahvastik |
 | `04_ariregister_igapaevane_increment` | iga päev 03:30 | Inkrementaalne Äriregistri laadimine |
