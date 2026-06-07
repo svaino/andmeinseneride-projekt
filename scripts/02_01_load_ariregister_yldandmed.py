@@ -36,11 +36,10 @@ def prepare_database():
     cur = conn.cursor()
     
     cur.execute("CREATE SCHEMA IF NOT EXISTS staging;")
-    # LISATUD: loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP veerg
+    # EEMALDATUD: nimi VARCHAR(255) veerg
     cur.execute("""
         CREATE TABLE IF NOT EXISTS staging.ariregister_uldandmed (
             reg_kood VARCHAR(50) PRIMARY KEY,
-            nimi VARCHAR(255) NOT NULL,
             oiguslik_vorm VARCHAR(100),
             asutamise_kuupaev DATE,
             maakond VARCHAR(100),
@@ -97,14 +96,13 @@ def convert_date_format(date_str):
 
 def save_batch(cur, batch_data):
     """Teostab andmete mass-salvestuse (Upsert) andmebaasi ja uuendab loaded_at ajatemplit."""
-    # MUUDATUS: Konflikti korral uuendatakse andmeid ja loaded_at väärtuseks seatakse NOW()
+    # EEMALDATUD: nimi veerg nii INSERT-ist kui ka EXCLUDED listist
     insert_query = """
         INSERT INTO staging.ariregister_uldandmed (
-            reg_kood, nimi, oiguslik_vorm, asutamise_kuupaev, maakond, staatus, emtak_kood, emtak_nimetus, emtak_versioon
+            reg_kood, oiguslik_vorm, asutamise_kuupaev, maakond, staatus, emtak_kood, emtak_nimetus, emtak_versioon
         )
         VALUES %s
         ON CONFLICT (reg_kood) DO UPDATE SET
-            nimi = EXCLUDED.nimi,
             oiguslik_vorm = EXCLUDED.oiguslik_vorm,
             asutamise_kuupaev = EXCLUDED.asutamise_kuupaev,
             maakond = EXCLUDED.maakond,
@@ -177,7 +175,6 @@ def download_and_process_xml():
                     if tag == "ettevotja":
                         company = {
                             "reg_kood": None,
-                            "nimi": None,
                             "raw_date": None,
                             "oiguslik_vorm": None,
                             "maakond": None,
@@ -205,12 +202,10 @@ def download_and_process_xml():
                     text = elem.text.strip() if elem.text and elem.text.strip() else None
 
                     if company is not None and text:
-                        # Top-level company fields
                         if path[-2:] == ["ettevotja", "ariregistri_kood"]:
                             company["reg_kood"] = text
 
-                        elif path[-2:] == ["ettevotja", "nimi"]:
-                            company["nimi"] = text
+                        # EEMALDATUD: "nimi" parsimise loogika kontroll
 
                         elif tag == "esmaregistreerimise_kpv":
                             company["raw_date"] = text
@@ -256,12 +251,13 @@ def download_and_process_xml():
 
                     # Close company
                     elif tag == "ettevotja" and company:
-                        if company["reg_kood"] and company["nimi"]:
+                        # MUUDATUS: Kontrollitakse ainult reg_kood olemasolu, kuna nime enam ei salvestata
+                        if company["reg_kood"]:
                             asutamise_kp = convert_date_format(company["raw_date"])
 
+                            # EEMALDATUD: company["nimi"] massiivi andmetest
                             batch.append((
                                 company["reg_kood"].strip(),
-                                company["nimi"][:255].strip(),
                                 (company["oiguslik_vorm"] or "Määramata")[:100].strip(),
                                 asutamise_kp,
                                 (company["maakond"] or "Määramata")[:100].strip(),
