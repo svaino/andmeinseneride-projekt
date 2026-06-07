@@ -45,7 +45,6 @@ def prepare_database():
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS staging.ariregister_uldandmed (
                     reg_kood VARCHAR(50) PRIMARY KEY,
-                    nimi VARCHAR(255) NOT NULL,
                     oiguslik_vorm VARCHAR(100),
                     asutamise_kuupaev DATE,
                     maakond VARCHAR(100),
@@ -55,6 +54,11 @@ def prepare_database():
                     emtak_versioon VARCHAR(50),
                     loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
+            """)
+
+            cur.execute("""
+                ALTER TABLE staging.ariregister_uldandmed
+                DROP COLUMN IF EXISTS nimi;
             """)
 
             cur.execute("""
@@ -392,11 +396,6 @@ def fetch_company_details(reg_kood: str):
 
     details = {
         "reg_kood": found_reg_kood,
-        "nimi": (
-            child_text(company_item, "evnimi")
-            or child_text(company_item, "nimi")
-            or "Määramata"
-        ),
         "oiguslik_vorm": (
             child_text(company_item, "oiguslik_vorm_tekstina")
             or child_text(company_item, "oiguslik_vorm")
@@ -421,7 +420,6 @@ def fetch_company_details(reg_kood: str):
 
     print(
         f"Parsed company: reg_kood={details['reg_kood']}, "
-        f"nimi={details['nimi']}, "
         f"staatus={details['staatus']}, "
         f"asutamise_kuupaev={details['asutamise_kuupaev']}",
         flush=True,
@@ -437,7 +435,6 @@ def upsert_company_details(rows):
     values = [
         (
             row["reg_kood"],
-            row["nimi"][:255],
             (row["oiguslik_vorm"] or "Määramata")[:100],
             row["asutamise_kuupaev"],
             (row["maakond"] or "Määramata")[:100],
@@ -452,7 +449,6 @@ def upsert_company_details(rows):
     sql = """
         INSERT INTO staging.ariregister_uldandmed (
             reg_kood,
-            nimi,
             oiguslik_vorm,
             asutamise_kuupaev,
             maakond,
@@ -463,7 +459,6 @@ def upsert_company_details(rows):
         )
         VALUES %s
         ON CONFLICT (reg_kood) DO UPDATE SET
-            nimi = EXCLUDED.nimi,
             oiguslik_vorm = EXCLUDED.oiguslik_vorm,
             asutamise_kuupaev = EXCLUDED.asutamise_kuupaev,
             maakond = EXCLUDED.maakond,
