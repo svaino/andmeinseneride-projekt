@@ -9,12 +9,7 @@ models:
         tests:
           - not_null
           - unique
-
-      - name: ettevotte_nimi
-        description: "Ettevõtte nimi Äriregistri andmetes."
-        tests:
-          - not_null
-
+          
       - name: oiguslik_vorm_grupp
         description: "Õigusliku vormi põhjal loodud üldistatud ettevõtlusvormi grupp."
         tests:

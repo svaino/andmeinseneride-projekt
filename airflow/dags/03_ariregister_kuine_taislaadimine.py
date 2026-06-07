@@ -6,7 +6,7 @@ from airflow.sdk import dag
 
 
 @dag(
-    dag_id="03_ariregister_kuuine_taielaadimine",
+    dag_id="03_ariregister_kuine_taislaadimine",
     schedule="0 3 1 * *",
     start_date=pendulum.datetime(2026, 5, 1, tz="Europe/Tallinn"),
     catchup=False,
@@ -23,7 +23,7 @@ from airflow.sdk import dag
         "retry_delay": timedelta(minutes=5),
     },
 )
-def ariregister_kuuine_taielaadimine():
+def ariregister_kuine_taislaadimine():
     lae_yldandmed = BashOperator(
         task_id="lae_ariregister_yldandmed",
         bash_command="python /opt/airflow/scripts/02_01_load_ariregister_yldandmed.py",
@@ -110,4 +110,4 @@ PY
     lae_yldandmed >> tagab_emtak >> tagab_rahvastik
 
 
-ariregister_kuuine_taielaadimine()
+ariregister_kuine_taislaadimine()
