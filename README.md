@@ -10,7 +10,7 @@ Otsast lõpuni andmeinseneeria töövoog: Äriregistri avaandmete API-st igapäe
 
 ## Äriküsimus
 
-Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
+Millistes valdkondades registreeritakse enim uusi ettevõtteid ja millises maakonnas on ettevõtlikuimad tööealised elanikud?
 
 Selgitused:
 Äriettevõteteks loeme kasumit taotlevaid ettevõtteid (AS, OÜ, UÜ, TÜ, TÜH ja FIE).
@@ -24,7 +24,7 @@ Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektu
 
 | Nõue | Kuidas projekt seda täidab |
 |---|---|
-| Selge äriküsimus | Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud? |
+| Selge äriküsimus | Millistes valdkondades registreeritakse enim uusi ettevõtteid ja millises maakonnas on ettevõtlikuimad tööealised elanikud? |
 | Ajas muutuv andmeallikas | Äriregistri igapäevased väljavõtted; Statistikaameti kuine uuendus. |
 | Automatiseeritud sissevõtt | Airflow import-DAG-id (`01_`–`04_` failid `airflow/dags/`). |
 | Transformatsioon | dbt mudelid (`dbt_project/rik_stat_dbt/`): staging → intermediate → marts; igapäevane DAG `05_dbt_igapaevane`. |

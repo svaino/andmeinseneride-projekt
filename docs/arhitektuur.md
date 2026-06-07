@@ -2,7 +2,7 @@
 
 ## Äriküsimus
 
-Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
+Millistes valdkondades registreeritakse enim uusi ettevõtteid ja millises maakonnas on ettevõtlikuimad tööealised elanikud?
 
 Algselt formuleeritud äriküsimusest "Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?" jätsime välja juhatuse muudatuste sageduse, sest:
 1. Äriregistri api ei pakkunud juhatuse muudatusi vaid registrikaardi muudatusi, millel ei olnud juhatuse liikmete muudatusi eristavat tunnust
