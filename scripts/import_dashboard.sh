@@ -23,6 +23,6 @@ fi
 echo "Impordime dashboard'i Supersetti..."
 superset import-dashboards \
   --path "$DASHBOARD_FILE" \
-  --username admin
+  --username "${SUPERSET_ADMIN_USER:-admin}"
 
 echo "Valmis! Ava Superset: http://localhost:8088"

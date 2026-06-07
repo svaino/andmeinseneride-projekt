@@ -2,9 +2,9 @@
 
 ## Äriküsimus
 
-Millistes valdkondades registreeritakse enim uusi ettevõtteid ja millises maakonnas on ettevõtlikuimad tööealised elanikud?
+Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
 
-Algselt formuleeritud äriküsimusest "Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?" jätsime välja juhatuse muudatuste sageduse, sest: 
+Algselt formuleeritud äriküsimusest "Millistes valdkondades registreeritakse enim uusi ettevõtteid ja kus on juhatuse muudatuste sagedus kõige kõrgem?" jätsime välja juhatuse muudatuste sageduse, sest:
 1. Äriregistri api ei pakkunud juhatuse muudatusi vaid registrikaardi muudatusi, millel ei olnud juhatuse liikmete muudatusi eristavat tunnust
 2. Kuna esmane fookus oli "uued ettevõtted", siis juhatuse muudatused käiks kõikide tegutsevate etevõtete kohta, mis viiks meie teema laialivalguvaks
 3. Kui oleks saanud äriregistrist kätte ainult juhatuse muudatused, siis puuduks arusaam, kas juhatuse muudatus oli seotud isku vahetusega või volituse tähtaja pikendamisega. Tasuta päringutes ei ole isikuandmete pärimise võimalust, et seda andmetest tuletada.
@@ -17,14 +17,14 @@ Algsed
 3. Uute ettevõtete arv 1000 elaniku kohta maakonniti, aastati.
 
 Tegelik
-1. Uute ettevõtete arv tegevusvaldkonniti, maakonniti, jur isiku tüübiti viimasel liviseval aastal
+1. Uute ettevõtete arv tegevusvaldkonniti, maakonniti, jur isiku tüübiti viimasel libiseval aastal
 2. Viimase 30 päeva jooksul asuttaud äriettevõtete populaarseimad tegevusvaldkonnad
-3. Ettevõtlikus maakonniti ja tegevusalati viimasel v mistahes libiseval aastal vahemikus 2021-2026 (kaart)
+3. Ettevõtlikus maakonniti ja tegevusalati viimasel või mistahes libiseval aastal vahemikus 2021-2026 (kaart)
 4. Uute ettevõtete arv maakonniti 1000 tööealise elaniku kohta aastati (libisevad aastad 2021-2026) ja tegevusalati
 5. Tegevusalade osakaalud ja nende erinevus viimasel libiseval aastal loodud uute ettevõtete ja enne seda loodud ettevõtete hulgas
 6. Äriettevõtete asutamise trend äriregistri loomise algusest kuni tänaseni Eesti regioonide kaupa
 
-Lisaks on kuvatud välja 
+Lisaks on kuvatud välja
 6. Viimase 30päeva jooksul loodud äriettevõtete arv
 7. Maksimaalne kuupäev, mille kohta andmed on laetud.
 
@@ -44,14 +44,14 @@ Lisaks on kuvatud välja
 
 
 **Toorandmed**
-- `staging.ariregister_uldandmed` — toorandmed RIK API-st (`reg_kood`,`nimi`, `oiguslik_vorm`,`asutamise_kuupaev`, `maakond`, `staatus`, `emtak_kood`,`emtak_nimetus`,`emtak_versioon`, `loaded_at`)
+- `staging.ariregister_uldandmed` — toorandmed RIK API-st (`reg_kood`, `oiguslik_vorm`,`asutamise_kuupaev`, `maakond`, `staatus`, `emtak_kood`,`emtak_nimetus`,`emtak_versioon`, `loaded_at`)
 - `staging.stat_rahvastik` — toorandmed Statistikaametist (`aasta`, `vanusegrupp`, `maakond`, `sugu`, `rahvus`,`elanike_arv`, `loaded_at`)
 - `emtak_2025` — tegevusalade klassifikaator (`id`, `kood`, `vanem`, `tegevusala_tekst`, `siia_kuulub`,`siia_kuulub_veel`,`siia_ei_kuulu`,`erialaliidud`,`on_erinõudeid`, `created_at`)
 - `emtak_2008_2025` — tegevusalade klassifikaatorite üleminekutabel (`id`, `kood_emtak_2008`, `tegevusala_tekst_emtak_2008`, `kood_emtak_2025`, `tegevusala_tekst_emtak_2025`,`märkused`,`created_at`)
 - `intermediate.dim_maakond` — genereeritud dbt/seeds  csv faili alusel (`maakond_id`, `maakond_nimi`, `iso_kood`,`regioon`, `kuvajarjestus`)
 
 **Põhilised arvutused intermediate kihis:**
-- `intermediate.dim_emtak` —  emtak_2025 tegevusalad, millele on leitud algandmetest kõrgeim tase e emtak_jaotis igale koodile sõltumata selle tasemest
+- `intermediate.dim_emtak` — emtak_2025 tegevusalad, millele on leitud algandmetest kõrgeim tase e emtak_jaotis igale koodile sõltumata selle tasemest
 - `intermediate.int_ariregister_yldandmed`:
     - oiguslik_vorm grupeeritud kolmeks: 1_äriettevõtted, 2_FIE, 3_Muud_jur_isikud;
     - asutamise kuupäeva ja hetkekuupäeva alusel leitud libisev aasta
@@ -61,7 +61,7 @@ Lisaks on kuvatud välja
 - `intermediate.int_ettevotete_arv_maakonniti_emtak`:
     - eelmisele vaatele lisatud emtak_jaotis ehk kõrgeima jaotise tunnus ja nimi
     - välistatud oigusliku vormi grupp '3_Muud_jur_isikud'
-    - grupeeritud andmed aasta, maakonna, emtak_jaotis ja ajaperioodi (viimased_6a) alusel 
+    - grupeeritud andmed aasta, maakonna, emtak_jaotis ja ajaperioodi (viimased_6a) alusel
 - `intermediate.int_stat_rahvastik`:
     - eemaldatud liigsed summeerivad (vanused, piirkonnad) v liigsed detailread (rahvus, sugu)
     - eemaldatud ' maakond' maakonna nimest
@@ -81,7 +81,7 @@ Lisaks on kuvatud välja
 - `marts.mart_emtak_portfolio_muutus`:
     - tekitatakse kaks gruppi: ettevõtted, mis on asutatud viimasel liikuval aastal ja enne seda, et võrrelda nende gruppide tegevusalade jaotisi
 - `marts.mart_ariettevotted_trend`:
-    - intermediate vaatele lisatakse maakond tabelist regioon, et joongraafikul poleks arusaamatult palju jooni. 
+    - intermediate vaatele lisatakse maakond tabelist regioon, et joongraafikul poleks arusaamatult palju jooni.
     - ei piirata aastat, et näha trendi äriregistri algusest (liikuvad aastad)
 - `marts.mart_viimane_kuu_ariettevotted`:
     - viimase 30 päeva jooksul asutatud ettevõtted tegevusalati ja maakonniti
@@ -119,4 +119,4 @@ Lisaks on kuvatud välja
 
 ## Privaatsus ja turve
 
-Projekt kasutab ainult avalikke andmeid. Isikuandmeid ei käsitleta. Inimeste nimed on olemas ainult FIE-tüüpi ettevõtetel aga ettevõtte kohta pole täpsemat aadressi kui maakonna tasemel. Tegemist on kõigile kättesaadavate avalike äriregistri andmetega. Andmebaasi, Airflow, Superseti ja Dbt kasutajad ning paroolid on ainult .env failis, mis on .gitogner. Repos on ainult .env.example koos näiteväärtustega.
+Projekt kasutab ainult avalikke andmeid. Isikuandmeid ei käsitleta. Ettevõtte nimesid sisse ei impordita, et mitte minna vastuollu GDPR nõudmistega (sest FIE nimi on sama, mis ettevõtte asutaja nimi). Andmebaasi, Airflow, Superseti ja Dbt kasutajad ning paroolid on ainult .env failis, mis on .gitignore. Repos on ainult .env.example koos näiteväärtustega.

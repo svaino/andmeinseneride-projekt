@@ -12,11 +12,11 @@ Otsast lõpuni andmeinseneeria töövoog: Äriregistri avaandmete API-st igapäe
 
 Millises tegevusvaldkonnas ja maakonnas registreeritakse enim uusi äriettevõtteid Eestis ja kuidas see on ajas muutunud?
 
-Selgitused: 
+Selgitused:
 Äriettevõteteks loeme kasumit taotlevaid ettevõtteid (AS, OÜ, UÜ, TÜ, TÜH ja FIE).
 KPI-na defineerime ettevõtlikkust - uute äriettevõtte arvu tuhande tööealise (20-74a) elaniku kohta.
 Ajaperioodina kasutame libisevat aastat (ingl. k. rolling year) - pidevalt muutuv aastane periood, mis võimaldab andmeid võrrelda teatud määratud kuupäevast alates sama kuupäevani aasta tagasi (nt. laadides andmeid 4.juunil 2026 on aastaks 2026 periood: 4. juuni 2025 - 3. juuni 2026 jne)
-Rahvastikustatistikat arvestame kalendriaasta alguse seisuga (1. jaanuar). Kuna aasta lõikes on maakondade rahvastiku kõikumised ca 1%, siis ei arvuta aastakeskimisi.  
+Rahvastikustatistikat arvestame kalendriaasta alguse seisuga (1. jaanuar). Kuna aasta lõikes on maakondade rahvastiku kõikumised ca 1%, siis ei arvuta aastakeskimisi.
 
 Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 
@@ -39,13 +39,16 @@ Täpsem mõõdikute ja otsuste kirjeldus: [`docs/arhitektuur.md`](docs/arhitektu
 flowchart LR
     A[Äriregistri API] --> B[Python laadimisskriptid]
     S[Statistikaameti API] --> B
-    F[EMTAK CSV] --> B
+    F[EMTAK_2025 CSV] --> B
+    T[EMTAK_uleminekutabel_2008_EMTAK_2025 CSV] --> B
     B --> C[(PostgreSQL staging)]
     C --> D[dbt]
     D --> E[(intermediate / marts)]
     E --> G[Superset]
     H1[Airflow import DAG-id] --> B
     H2[Airflow 05_dbt_igapaevane] --> D
+    U[dim_maakonnad CSV] --> X
+    X[DBT_SEED] --> D
 ```
 
 Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
@@ -55,6 +58,11 @@ Andmekihtide ülevaade: [`docs/arhitektuur.md`](docs/arhitektuur.md).
 - Docker Desktop (või muu keskkond, kus töötab `docker compose`)
 - Internet (RIK ja Statistikaameti API)
 - Vabad portid vastavalt `.env`-ile (vaikimisi analüütika-DB `55432`, Airflow `8080`, Superset `8088`, dbt docs `18081`)
+- Vaja küsida Äriregistri API paroolid https://avaandmed.ariregister.rik.ee/et/ariregistri-avaandmete-api/api-teenuste-tutvustus, vastasel juhul ei tööta airflow dag `04_ariregister_igapaevane_increment`. Paroolid on vaja asendada .env failis
+```
+ARIREGISTER_USER=andmed
+ARIREGISTER_PASSWORD=andmetes
+```
 
 ## Käivitamine
 
@@ -64,7 +72,7 @@ Veendu, mis kaustas oled. Vajadusel liigu õigesse kausta
 cd andmeinseneride-projekt
 ```
 
-### 2. Kopeeri keskkonnamuutujad.  
+### 2. Kopeeri keskkonnamuutujad.
 ```bash
 cp .env.example .env
 ```
@@ -97,19 +105,19 @@ docker compose ps
 
 ### 4. Andmete laadimine Airflowga (vt Teenused)
 
-Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080 Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05. 
+Andmete impordi ja transformatsiooni saab käivitada Airflows http://localhost:8080/dags Esmaseks täitmiseks tuleb jooksutada DAG-e 01-03 ja 05.
 
 
 Alternatiivseks andmelaadimiseks võib käivitada terminalis
 ```bash
-docker exec andmeinseneeria-pipeline bash scripts/run_data_import.sh 
+docker exec andmeinseneeria-pipeline bash scripts/run_data_import.sh
 ```
-ja seejärel käivitada dbt seed ja mudelid: 
+ja seejärel käivitada dbt seed ja mudelid:
 ```bash
 docker exec andmeinseneeria-dbt bash -c "dbt seed && dbt run"
 ```
 
-### 5. Ava Superset 
+### 5. Ava Superset
 
 http://localhost:8088 (vt Teenused) ja impordi sinna näidikulaud:
 ```bash
@@ -117,6 +125,10 @@ docker exec -it andmeinseneeria-superset bash scripts/import_dashboard.sh
 ```
 Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (st liikuv aasta). Filtrid mõjuvad graafikutel, millel see on loogiline ja võimalik.
 
+NB! superset dashboardi importimiseks peavad Postgres andmebaasi nimi kasutaja ja salasõna .env failis olema `praktikum`
+
+Alternatiivina saab dashboardi importida UI `http://localhost:8088/dashboard/list` kaudu.
+Zip fail asub projekti kaustas `superset\dashboards\ettevotted_dashboard.zip`.
 
 ## Teenused
 
@@ -125,7 +137,7 @@ Supersetis näidikulaual saab kasutada filtreid: Maakond, EMTAK jaotis, Aasta (s
 | Airflow UI | http://localhost:8080 — kasutaja/parool `.env`-ist (`_AIRFLOW_WWW_USER_*`, vaikimisi `airflow` / `airflow`) |
 | Superset | http://localhost:8088 — admin `.env`-ist (`SUPERSET_ADMIN_*`) |
 | PostgreSQL (analüütika) | `localhost:${DB_PORT_HOST:-55432}` — `POSTGRES_*` |
-| dbt dokumentatsioon | http://localhost:18081 (vt allpool) |
+| dbt dokumentatsioon | http://localhost:18081 ([vt allpool](#dbt-dokumentatsioon-veeb)) |
 
 ### Airflow DAG-id
 
@@ -141,7 +153,7 @@ Import ja dbt on **eraldi DAG-id**: laadimisskriptid (`01_`–`04_`) ja transfor
 
 **1. kuupäeva järjekord:** 03:00 täislaadimine → 03:30 inkrement → 04:00 rahvastik → 05:00 dbt.
 
-**Esmane käivitus pärast kloonimist:** `01` käivitub automaatselt; `02`–`05` järgnevad **cronile** (vaata Airflow UI „Next run“). Kui vajad andmeid kohe kuu keskel, **trigger** käsitsi `02`, `03` ja/või `05`. Enne esimest `05` käivitust peavad import-DAG-id andmed stagingusse tooma.
+**Esmane käivitus pärast kloonimist:** Käivitad dagid `01–03` ja `05`. `04` käivitamine on vabatahtlik. Enne esimest `05` käivitust peavad import-DAG-id andmed stagingusse tooma.
 
 Mudelite valik: [`dbt_project/rik_stat_dbt/selectors.yml`](dbt_project/rik_stat_dbt/selectors.yml). Uue `.sql` faili lisamisel `models/marts/` piisab `05_dbt_igapaevane` uuesti käivitamisest.
 
