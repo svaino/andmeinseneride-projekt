@@ -3,6 +3,13 @@ version: 2
 models:
   - name: mart_ettevotlikus_6a
     description: "Maakonna, aasta ja EMTAK jaotise taseme ettevõtlikkuse mõõdik viimase kuue aasta kohta. Mudel võrdleb viimase kuue aasta jooksul asutatud äriettevõtete arvu 20–74-aastase elanikkonnaga."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - aasta
+              - maakond
+              - emtak_jaotis
     columns:
       - name: aasta
         description: "Rahvastikuandmete aasta."
@@ -11,6 +18,11 @@ models:
 
       - name: maakond
         description: "Maakonna nimi."
+        tests:
+          - not_null
+
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
         tests:
           - not_null
 
@@ -24,19 +36,16 @@ models:
         tests:
           - not_null
 
-      - name: ettevotteid_1000_ettevotliku_kohta
-        description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv 1000 ettevõtlikus eas elaniku kohta."
-
-      - name: regioon
-        description: "Maakonna regioon."
-        tests:
-          - not_null
-
-      - name: emtak_jaotis
-        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
 
   - name: mart_ettevotlikus_geo
     description: "Geograafilise visualiseerimise jaoks loodud ettevõtlikkuse mart. Mudel lisab viimase kuue aasta ettevõtlikkuse mõõdikutele maakonna kaardikoodi."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - aasta
+              - maakond
+              - emtak_jaotis
     columns:
       - name: aasta
         description: "Rahvastikuandmete aasta."
@@ -48,8 +57,8 @@ models:
         tests:
           - not_null
 
-      - name: regioon
-        description: "Maakonna regioon."
+      - name: iso_kood
+        description: "Superseti Eesti kaardikihi jaoks kasutatav maakonna kood."
         tests:
           - not_null
 
@@ -65,17 +74,24 @@ models:
 
       - name: ettevotteid_1000_ettevotliku_kohta
         description: "Viimase kuue aasta jooksul asutatud äriettevõtete arv 1000 ettevõtlikus eas elaniku kohta."
-
-      - name: emtak_jaotis
-        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
-
-      - name: iso_kood
-        description: "Superseti Eesti kaardikihi jaoks kasutatav maakonna kood."
         tests:
           - not_null
 
+      - name: emtak_jaotis
+        description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
+        tests:
+          - not_null
+
+
   - name: mart_uute_ariettevotete_arv_tegevusalati
     description: "Uute äriettevõtete arv tegevusala, maakonna ja õigusliku vormi grupi lõikes. Mudel kasutab EMTAK 2025 jaotist ning loendab valitud liikuva aasta ettevõtteid."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - jur_valdkond
+              - maakond
+              - kõrgeim_vanem
     columns:
       - name: jur_valdkond
         description: "Õigusliku vormi põhjal loodud üldistatud ettevõtlusvormi grupp."
@@ -98,11 +114,6 @@ models:
         tests:
           - not_null
 
-      - name: kõrgeim_vanem_nimi
-        description: "EMTAK hierarhia kõrgeima taseme vanemjaotise nimetus."
-        tests:
-          - not_null
-
       - name: emtak_jaotis
         description: "EMTAK kõrgeima taseme jaotis koos jaotise nimetusega."
         tests:
@@ -113,8 +124,15 @@ models:
         tests:
           - not_null
 
+
   - name: mart_emtak_portfolio_muutus
     description: "Maakonna EMTAK portfelli muutuse mart. Mudel võrdleb viimase aasta äriettevõtete jaotust varasemate aastate jaotusega EMTAK jaotise lõikes."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - maakond
+              - emtak_jaotis
     columns:
       - name: maakond
         description: "Maakonna nimi."
