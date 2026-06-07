@@ -226,7 +226,8 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
+    command: >
+      bash -c "/opt/airflow/scripts/run_startup_bootstrap.sh && exec /entrypoint scheduler"
     container_name: andmeinseneeria-airflow-scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
